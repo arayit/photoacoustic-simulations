@@ -4,10 +4,30 @@
 
 | File | Description |
 |------|-------------|
-| `baseline_photoacoustic_simulation.m` | Main simulation script |
+| `scenario_baseline.m` | Entry point — builds `cfg`, calls `run_baseline_pa`, saves/loads results, calls `visualize_pa` |
+| `run_baseline_pa.m` | Simulation function — takes `cfg` struct, returns `results` struct |
+| `visualize_pa.m` | Visualization function — takes `results` struct, plots p0, B-scan, RF trace |
 | `gaussian_beam_params.m` | Computes focused Gaussian beam parameters |
 | `build_intensity_map.m` | Builds the 2D absolute intensity map with Beer-Lambert attenuation |
 | `build_property_maps.m` | Builds mu_a and mu_t maps over a grid given tissue and target properties |
+| `baseline_photoacoustic_simulation.m` | Standalone script (reference) |
+
+### Calling convention
+
+```matlab
+% In a scenario script:
+cfg.lambda = 1064e-9;
+% ... (all parameters) ...
+results = run_baseline_pa(cfg);       % run simulation
+save('my_results.mat', 'results');    % optional save
+visualize_pa(results);                % plot
+
+% To re-visualize saved results without re-running:
+load('my_results.mat', 'results');
+visualize_pa(results);
+```
+
+`results` fields: `sensor_data`, `kgrid`, `p0_acoustic`, `p0_opt`, `Q_opt`, `I_opt_map`, `I_map`, `beam`, `z_vec`, `y_vec`, `z_opt_vec`, `y_opt_vec`, `element_y`, `cfg`.
 
 ---
 
