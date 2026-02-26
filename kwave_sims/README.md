@@ -63,14 +63,14 @@ Derived:
 
 Two grids are used: a **global acoustic grid** (full domain, `dx_acoustic` spacing) for Beer-Lambert propagation and k-Wave; and a **local optical grid** (focal region only, `dy_optical` spacing) for energy deposition.
 
-### Sensor
+### Detection
 
 | Variable | Unit | Description |
 |----------|------|-------------|
-| `sensor_depth` | m | Depth of linear array sensor below surface |
-| `f_transducer` | Hz | Transducer center frequency |
+| `n_elements` | — | Number of transducer elements |
+| `element_pitch` | m | Element spacing — derived as `c_sound / (2 · f_transducer)` (λ/2) |
 
-Sensor is a full-width linear array at `sensor_depth`. Placed away from the grid boundary to avoid PML interference.
+Array is placed at the tissue surface (z=0, first grid row), centered at y=0. Element positions are mapped to the nearest acoustic grid points.
 
 ---
 

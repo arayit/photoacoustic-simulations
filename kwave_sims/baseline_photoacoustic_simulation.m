@@ -37,13 +37,14 @@ rho            = 1000;          % density [kg/m^3]
 alpha_coeff    = 0.75;          % acoustic absorption coefficient [dB/MHz^y/cm]
 alpha_power    = 1.5;           % power law exponent
 
-% --- Sensor ---
-sensor_depth   = 100e-6;        % sensor depth below surface [m]
-
 % --- Acoustic grid (matched to transducer bandwidth) ---
 f_transducer   = 50e6;          % transducer center frequency [Hz]
 PPW_acoustic   = 10;            % points per wavelength
 dx_acoustic    = c_sound / (f_transducer * PPW_acoustic);
+
+% --- Detection ---
+n_elements     = 128;                           % number of transducer elements
+element_pitch  = c_sound / (2 * f_transducer);  % lambda/2 at center frequency [m]
 
 % --- Global grid (Beer-Lambert + k-Wave) ---
 z_max     = 4e-3;
@@ -122,10 +123,12 @@ medium.alpha_power = alpha_power;
 % --- Source ---
 source.p0 = p0_acoustic;
 
-% --- Sensor: linear array at sensor_depth ---
-sensor_row        = max(1, round(sensor_depth / dx_acoustic));
-sensor.mask       = zeros(Nz, Ny);
-sensor.mask(sensor_row, :) = 1;
+% --- Sensor: linear array at tissue surface ---
+element_y    = linspace(-(n_elements-1)/2, (n_elements-1)/2, n_elements) * element_pitch;
+element_iy   = round((element_y - y_vec(1)) / dx_acoustic) + 1;
+element_iy   = max(1, min(Ny, element_iy));
+sensor.mask  = zeros(Nz, Ny);
+sensor.mask(1, element_iy) = 1;
 
 % --- Time array ---
 t_end = 2 * z_max / c_sound;
