@@ -40,8 +40,10 @@ y_max          = cfg.y_max;
 PPW_optical    = cfg.PPW_optical;
 opt_margin     = cfg.opt_margin;
 
-verbose = true;
-if isfield(cfg, 'verbose'), verbose = cfg.verbose; end
+verbose  = true;
+if isfield(cfg, 'verbose'),  verbose  = cfg.verbose;  end
+pml_size = 20;
+if isfield(cfg, 'pml_size'), pml_size = cfg.pml_size; end
 
 % --- Beam ---
 beam           = gaussian_beam_params(lambda, NA, n, target_depth);
@@ -149,7 +151,7 @@ end
 % --- Run k-Wave ---
 if verbose, fprintf('Running k-Wave...\n'); end
 sensor_data = kspaceFirstOrder2D(kgrid, medium, source, sensor, ...
-    'PMLSize', 20, 'PlotSim', false, 'DataCast', data_cast);
+    'PMLSize', pml_size, 'PlotSim', false, 'DataCast', data_cast);
 
 if gpuDeviceCount > 0
     sensor_data = gather(sensor_data);

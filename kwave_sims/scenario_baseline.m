@@ -40,13 +40,14 @@ cfg.PPW_acoustic   = 10;
 cfg.n_elements     = 128;
 
 % --- Grid extents ---
-cfg.z_max          = 4e-3;          % [m]
+cfg.z_max          = 6e-3;          % [m]  — must be >= target_depth + 2-3 mm clearance
 cfg.y_max          = 1.5e-3;        % [m] (half-width, grid spans ±y_max)
 
 % --- Optical resolution ---
 cfg.PPW_optical    = 5;
 cfg.opt_margin     = 5;             % optical grid half-extent in target radii
 
+cfg.pml_size       = 40;            % PML thickness [grid points] — 20 per side causes back-wall reflections
 cfg.verbose        = true;
 
 % =========================================================================
