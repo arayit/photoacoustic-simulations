@@ -20,17 +20,27 @@ mu_s_tissue = 91;               % reduced scattering
 mu_t_tissue = mu_a_tissue + mu_s_tissue;
 
 % --- Target optical properties [m^-1] ---
-mu_a_target = 500;
-mu_s_target = 10;
-mu_t_target = mu_a_target + mu_s_target;
+mu_a_target    = 500;
+mu_s_target    = 10;
+mu_t_target    = mu_a_target + mu_s_target;
+alpha2_target  = 9e-13;         % TPA coefficient [m/W]
+alpha3_target  = 0;             % 3PA coefficient [m^2/W^2]
 
 % --- Beam ---
 beam           = gaussian_beam_params(lambda, NA, n, target_depth);
 I_focus_peak   = (fluence_focus * 1e4) / pulse_duration;            % [W/m^2]
 I_surface_peak = I_focus_peak * (beam.w0 / beam.w_surface)^2;       % [W/m^2]
 
+% --- Medium acoustic properties ---
+c_sound        = 1500;          % speed of sound [m/s]
+rho            = 1000;          % density [kg/m^3]
+alpha_coeff    = 0.75;          % acoustic absorption coefficient [dB/MHz^y/cm]
+alpha_power    = 1.5;           % power law exponent
+
+% --- Sensor ---
+sensor_depth   = 100e-6;        % sensor depth below surface [m]
+
 % --- Acoustic grid (matched to transducer bandwidth) ---
-c_sound        = 1500;          % [m/s] - placeholder until medium is defined
 f_transducer   = 50e6;          % transducer center frequency [Hz]
 PPW_acoustic   = 10;            % points per wavelength
 dx_acoustic    = c_sound / (f_transducer * PPW_acoustic);
@@ -56,7 +66,7 @@ y_opt_vec = linspace(-opt_half_ext, opt_half_ext, ...
                      round(2*opt_half_ext / dy_optical));
 
 % --- Property maps on global grid ---
-[mu_a_map, mu_t_map] = build_property_maps(z_vec, y_vec, ...
+[~, mu_t_map] = build_property_maps(z_vec, y_vec, ...
     mu_a_tissue, mu_t_tissue, mu_a_target, mu_t_target, target_depth, target_radius);
 
 % --- Intensity on global grid (Beer-Lambert) ---
@@ -73,11 +83,14 @@ for iz = 1:length(z_opt_vec)
 end
 
 % --- Property maps on optical grid ---
-[mu_a_opt_map, ~] = build_property_maps(z_opt_vec, y_opt_vec, ...
-    mu_a_tissue, mu_t_tissue, mu_a_target, mu_t_target, target_depth, target_radius);
+[mu_a_opt_map, ~, alpha2_opt_map, alpha3_opt_map] = build_property_maps(z_opt_vec, y_opt_vec, ...
+    mu_a_tissue, mu_t_tissue, mu_a_target, mu_t_target, target_depth, target_radius, ...
+    0, alpha2_target, 0, alpha3_target);
 
 % --- Energy deposition and initial pressure on optical grid ---
-Q_opt  = mu_a_opt_map .* I_opt_map * pulse_duration;   % [J/m^3]
+Q_opt  = (mu_a_opt_map .* I_opt_map ...
+        + alpha2_opt_map .* I_opt_map.^2 ...
+        + alpha3_opt_map .* I_opt_map.^3) * pulse_duration;   % [J/m^3]
 p0_opt = Gamma * Q_opt;                                 % [Pa]
 
 % --- Interpolate p0 to acoustic grid ---
@@ -96,3 +109,45 @@ fprintf('  I_surface   = %.2e W/m^2\n', I_surface_peak);
 fprintf('\nGlobal grid:  %d x %d pts  (dx = %.1f um)\n', Nz, Ny, dx_acoustic*1e6);
 fprintf('Optical grid: %d x %d pts  (dz = %.0f nm, dy = %.0f nm)\n', ...
     length(z_opt_vec), length(y_opt_vec), dz_optical*1e9, dy_optical*1e9);
+
+% --- k-Wave grid ---
+kgrid = kWaveGrid(Nz, dx_acoustic, Ny, dx_acoustic);
+
+% --- k-Wave medium ---
+medium.sound_speed = c_sound;
+medium.density     = rho;
+medium.alpha_coeff = alpha_coeff;
+medium.alpha_power = alpha_power;
+
+% --- Source ---
+source.p0 = p0_acoustic;
+
+% --- Sensor: linear array at sensor_depth ---
+sensor_row        = max(1, round(sensor_depth / dx_acoustic));
+sensor.mask       = zeros(Nz, Ny);
+sensor.mask(sensor_row, :) = 1;
+
+% --- Time array ---
+t_end = 2 * z_max / c_sound;
+kgrid.makeTime(c_sound, [], t_end);
+
+% --- GPU ---
+if gpuDeviceCount > 0
+    data_cast = 'gpuArray-single';
+    fprintf('\nGPU detected: %s\n', gpuDevice().Name);
+else
+    data_cast = 'single';
+    fprintf('\nNo GPU detected, running on CPU.\n');
+end
+
+% --- Run ---
+fprintf('Running k-Wave...\n');
+sensor_data = kspaceFirstOrder2D(kgrid, medium, source, sensor, ...
+    'PMLSize', 20, 'PlotSim', false, 'DataCast', data_cast);
+
+if gpuDeviceCount > 0
+    sensor_data = gather(sensor_data);
+end
+
+fprintf('Done. Sensor data: %d time steps x %d elements\n', ...
+    size(sensor_data, 1), size(sensor_data, 2));

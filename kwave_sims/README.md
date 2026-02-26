@@ -7,6 +7,7 @@
 | `baseline_photoacoustic_simulation.m` | Main simulation script |
 | `gaussian_beam_params.m` | Computes focused Gaussian beam parameters |
 | `build_intensity_map.m` | Builds the 2D absolute intensity map with Beer-Lambert attenuation |
+| `build_property_maps.m` | Builds mu_a and mu_t maps over a grid given tissue and target properties |
 
 ---
 
@@ -14,7 +15,7 @@
 
 1. **Beer-Lambert propagation** — intensity computed on global grid (acoustic spacing). Outputs accumulated attenuation profile `acc_att_vec`.
 2. **Optical grid intensity** — accumulated attenuation interpolated from global grid to optical grid z-positions. Gaussian beam evaluated analytically at fine optical resolution.
-3. **Energy deposition** — `Q = mu_a · I · τ` [J/m³] on optical grid.
+3. **Energy deposition** — `Q = (μ_a·I + α₂·I² + α₃·I³) · τ` [J/m³] on optical grid.
 4. **Initial pressure** — `p0 = Γ · Q` [Pa] on optical grid.
 5. **Interpolation** — `p0` interpolated from optical grid onto acoustic grid using `griddedInterpolant`. Values outside optical domain set to zero.
 6. **Acoustic propagation** — k-Wave runs on acoustic grid with `p0_acoustic` as source.
@@ -62,6 +63,28 @@ Derived:
 
 Two grids are used: a **global acoustic grid** (full domain, `dx_acoustic` spacing) for Beer-Lambert propagation and k-Wave; and a **local optical grid** (focal region only, `dy_optical` spacing) for energy deposition.
 
+### Sensor
+
+| Variable | Unit | Description |
+|----------|------|-------------|
+| `sensor_depth` | m | Depth of linear array sensor below surface |
+| `f_transducer` | Hz | Transducer center frequency |
+
+Sensor is a full-width linear array at `sensor_depth`. Placed away from the grid boundary to avoid PML interference.
+
+---
+
+### Acoustic Medium Properties
+
+| Variable | Unit | Description |
+|----------|------|-------------|
+| `c_sound` | m/s | Speed of sound |
+| `rho` | kg/m³ | Medium density |
+| `alpha_coeff` | dB/MHz^y/cm | Acoustic absorption coefficient |
+| `alpha_power` | — | Power law exponent y |
+
+Acoustic medium is assumed homogeneous. These map directly to k-Wave `medium` struct fields.
+
 ---
 
 ### Optical Properties
@@ -75,6 +98,8 @@ Two grids are used: a **global acoustic grid** (full domain, `dx_acoustic` spaci
 | `mu_a_target` | m⁻¹ | Target absorption coefficient |
 | `mu_s_target` | m⁻¹ | Target reduced scattering coefficient |
 | `mu_t_target` | m⁻¹ | `mu_a + mu_s` — total attenuation (target) |
+| `alpha2_target` | m/W | Two-photon absorption coefficient |
+| `alpha3_target` | m²/W² | Three-photon absorption coefficient |
 
 `mu_t` drives Beer-Lambert beam depletion. `mu_a` drives energy deposition (only absorbed photons heat the medium).
 
@@ -85,8 +110,8 @@ Two grids are used: a **global acoustic grid** (full domain, `dx_acoustic` spaci
 ### `gaussian_beam_params(lambda, NA, n, z_focus)`
 Returns struct `beam`: `w0`, `zR`, `w_surface`, `z_focus`.
 
-### `build_property_maps(z_vec, y_vec, mu_a_bg, mu_t_bg, mu_a_tgt, mu_t_tgt, z_target, r_target)`
-Returns `mu_a_map`, `mu_t_map` (Nz × Ny) on the global grid. Background tissue everywhere, target region overwritten.
+### `build_property_maps(z_vec, y_vec, mu_a_bg, mu_t_bg, mu_a_tgt, mu_t_tgt, z_target, r_target, alpha2_bg, alpha2_tgt, alpha3_bg, alpha3_tgt)`
+Returns `mu_a_map`, `mu_t_map`, `alpha2_map`, `alpha3_map` (Nz × Ny). Nonlinear coefficients optional (default zero). Background tissue everywhere, target region overwritten.
 
 ---
 
