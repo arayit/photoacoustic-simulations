@@ -1,8 +1,11 @@
-clear all; close all; clc;
+clearvars; close all; clc;
 
 % =========================================================================
 % Scenario: baseline — single absorbing target, no nonlinear excitation
 % =========================================================================
+
+% --- Label ---
+cfg.label          = 'Baseline';
 
 % --- Beam ---
 cfg.lambda         = 1064e-9;       % wavelength [m]
@@ -60,7 +63,7 @@ if ~force_rerun && exist(save_path, 'file')
     fprintf('Loading existing results from %s\n', save_path);
     load(save_path, 'results');
 else
-    results = run_baseline_pa(cfg);
+    results = run_pa_sim(cfg);
     save(save_path, 'results', '-v7.3');
     fprintf('Results saved to %s\n', save_path);
 end

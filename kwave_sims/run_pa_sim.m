@@ -1,9 +1,12 @@
-function results = run_baseline_pa(cfg)
-% RUN_BASELINE_PA  Run baseline photoacoustic simulation.
+function results = run_pa_sim(cfg)
+% RUN_PA_SIM  Run photoacoustic simulation.
 %
-%   results = run_baseline_pa(cfg)
+%   results = run_pa_sim(cfg)
 %
 %   See scenario_baseline.m for a complete cfg example.
+
+% --- Validate ---
+validate_cfg(cfg);
 
 % --- Unpack cfg ---
 lambda         = cfg.lambda;
@@ -46,9 +49,10 @@ pml_size = 20;
 if isfield(cfg, 'pml_size'), pml_size = cfg.pml_size; end
 
 % --- Beam ---
-beam           = gaussian_beam_params(lambda, NA, n, target_depth);
-I_focus_peak   = (fluence_focus * 1e4) / pulse_duration;
-I_surface_peak = I_focus_peak * (beam.w0 / beam.w_surface)^2;
+beam              = gaussian_beam_params(lambda, NA, n, target_depth);
+fluence_focus_si  = fluence_focus * 1e4;            % J/cm² → J/m²
+I_focus_peak      = fluence_focus_si / pulse_duration;
+I_surface_peak    = I_focus_peak * (beam.w0 / beam.w_surface)^2;
 
 % --- Acoustic grid ---
 dx_acoustic    = c_sound / (f_transducer * PPW_acoustic);

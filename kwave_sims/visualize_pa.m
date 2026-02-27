@@ -32,9 +32,15 @@ n_el      = size(sensor_data, 1);
 center_el = round(n_el / 2);
 
 % -------------------------------------------------------------------------
+if isfield(cfg, 'label')
+    fig_title = ['Photoacoustic Simulation — ' cfg.label];
+else
+    fig_title = 'Photoacoustic Simulation';
+end
+
 figure('Color', 'k', 'Position', [80 80 1400 480]);
 tl = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
-title(tl, 'Photoacoustic Simulation — Baseline', 'Color', 'w', 'FontSize', 13);
+title(tl, fig_title, 'Color', 'w', 'FontSize', 13);
 
 % --- Panel 1: p0 on optical grid ---
 ax1 = nexttile;
