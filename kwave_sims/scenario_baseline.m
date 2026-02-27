@@ -56,7 +56,7 @@ cfg.verbose        = true;
 % =========================================================================
 % Run / load
 % =========================================================================
-save_path    = 'results_baseline.mat';
+save_path    = ['results_' lower(strrep(cfg.label, ' ', '_')) '.mat'];
 force_rerun  = false;
 
 if ~force_rerun && exist(save_path, 'file')

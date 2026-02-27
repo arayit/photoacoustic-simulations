@@ -1,12 +1,18 @@
 function visualize_pa(results)
 % VISUALIZE_PA  Visualize photoacoustic simulation results.
 %
-%   visualize_pa(results)   — pass results struct from run_baseline_pa
+%   visualize_pa(results)        — pass results struct from run_pa_sim
+%   visualize_pa('results_baseline.mat')  — load from file and visualize
 %
 %   Panels:
 %     1. Initial pressure p0 on optical grid
 %     2. B-scan (sensor_data: all elements vs time/depth)
 %     3. Central element RF trace
+
+if ischar(results) || isstring(results)
+    s = load(results, 'results');
+    results = s.results;
+end
 
 sensor_data  = results.sensor_data;
 kgrid        = results.kgrid;
