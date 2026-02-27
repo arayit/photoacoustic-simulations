@@ -168,6 +168,7 @@ end
 
 % --- Pack results ---
 results.sensor_data  = sensor_data;
+results.t_array      = kgrid.t_array;   % plain double — load without k-Wave
 results.kgrid        = kgrid;
 results.p0_acoustic  = p0_acoustic;
 results.p0_opt       = p0_opt;

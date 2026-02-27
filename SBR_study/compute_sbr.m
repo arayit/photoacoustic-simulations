@@ -20,9 +20,7 @@ cfg          = results_with.cfg;
 c_sound      = cfg.c_sound;
 target_depth = cfg.target_depth;
 target_radius = cfg.target_radius;
-kgrid        = results_with.kgrid;
-
-t_vec = kgrid.t_array;
+t_vec = results_with.t_array;           % plain double — no k-Wave needed
 dt    = t_vec(2) - t_vec(1);
 
 % --- Time window around target arrival ---
@@ -36,10 +34,11 @@ window   = it_lo:it_hi;
 
 % --- Ensure [n_elements x Nt] orientation ---
 sd_with = results_with.sensor_data;
-if size(sd_with, 1) == kgrid.Nt, sd_with = sd_with'; end
+Nt = length(t_vec);
+if size(sd_with, 1) == Nt, sd_with = sd_with'; end
 
 sd_bg = results_bg.sensor_data;
-if size(sd_bg, 1) == kgrid.Nt, sd_bg = sd_bg'; end
+if size(sd_bg, 1) == Nt, sd_bg = sd_bg'; end
 
 % --- Peak amplitude in window ---
 p_signal     = max(abs(sd_with(:, window)), [], 'all');

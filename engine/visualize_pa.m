@@ -15,7 +15,6 @@ if ischar(results) || isstring(results)
 end
 
 sensor_data  = results.sensor_data;
-kgrid        = results.kgrid;
 element_y    = results.element_y;
 p0_opt       = results.p0_opt;
 z_opt_vec    = results.z_opt_vec;
@@ -26,11 +25,11 @@ c_sound      = cfg.c_sound;
 target_depth = cfg.target_depth;
 
 % --- Time / depth axis ---
-t_vec      = kgrid.t_array;             % [1 x Nt]
+t_vec      = results.t_array;           % [1 x Nt] — plain double, no k-Wave needed
 depth_vec  = t_vec * c_sound * 1e3;    % one-way depth [mm]
 
 % --- Ensure sensor_data is [n_elements x Nt] ---
-Nt = kgrid.Nt;
+Nt = length(t_vec);
 if size(sensor_data, 1) == Nt
     sensor_data = sensor_data';
 end
