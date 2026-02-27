@@ -7,7 +7,7 @@ clearvars; close all; clc;
 %   lambda       = 1064 nm
 %   NA           = 0.55
 %   target_depth = 3 mm
-%   contrast agent: BODIPY-TR (alpha1=0, alpha2=9e-13 m/W, alpha3=0)
+%   contrast agent: BODIPY-TR (alpha1=0, alpha2=9e-14 m/W, alpha3=0)
 %
 % Assumed (not scenario-specific, held constant):
 %   target_radius = 5 um
@@ -31,11 +31,18 @@ clearvars; close all; clc;
 % =========================================================================
 
 % --- Paths ---
-study_dir = fileparts(mfilename('fullpath'));
+study_dir   = fileparts(mfilename('fullpath'));
 addpath(fullfile(study_dir, '..', 'engine'));
 results_dir = fullfile(study_dir, 'results');
 
 force_rerun = false;
+
+% --- Progress tracking ---
+N_list    = 10:10:300;
+n_total   = 2 + numel(N_list);     % s01 + s02 + 30 burst = 32
+sidx      = 0;                      % scenario counter
+t_runs    = [];                     % elapsed time per completed run (for ETA)
+t_start   = tic;                    % wall clock for total elapsed
 
 % =========================================================================
 % Base cfg — shared across all scenarios
@@ -70,48 +77,60 @@ base.y_max         = 1.5e-3;        % [m]
 base.PPW_optical   = 5;
 base.opt_margin    = 5;
 base.pml_size      = 40;
-base.verbose       = true;
+base.verbose       = false;         % suppress engine output — progress shown here
+
+fprintf('=== exp_001 | %d scenarios | %s ===\n\n', n_total, datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 
 % =========================================================================
-% Scenario 1: NS single pulse, tau = 3 ns, F = 10 J/cm^2
+% Scenario 1: NS single pulse, tau = 3 ns, F = 1 J/cm^2
 % tau = 3 ns chosen to satisfy stress confinement (tau_stress ~ r/c ~ 3.3 ns)
 % =========================================================================
-cfg            = base;
-cfg.label      = 's01_ns_tau3ns_F1';
+sidx      = sidx + 1;
+cfg       = base;
+cfg.label = 's01_ns_tau3ns_F1';
 cfg.pulse_duration = 3e-9;          % [s]
 cfg.fluence_focus  = 1;             % [J/cm^2]
 
 save_path = fullfile(results_dir, [cfg.label '.mat']);
+fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
+t0 = tic;
 if ~force_rerun && exist(save_path, 'file')
-    fprintf('[s01] Loading existing results.\n');
+    fprintf('— loaded\n');
 else
-    fprintf('[s01] Running...\n');
+    fprintf('— running...\n');
     results = run_pa_sim(cfg);
     save(save_path, 'results', '-v7.3');
-    fprintf('[s01] Saved: %s\n', save_path);
+    t_runs(end+1) = toc(t0);
+    fprintf('        done in %s\n', format_duration(t_runs(end)));
 end
+print_progress(sidx, n_total, t_start, t_runs);
 
 % =========================================================================
-% Scenario 2: FS single pulse, taup = 100 fs, Fp = 1 J/cm^2
+% Scenario 2: FS single pulse, taup = 100 fs, Fp = 0.1 J/cm^2
 % =========================================================================
-cfg                = base;
-cfg.label          = 's02_fs_tau100fs_F01';
+sidx      = sidx + 1;
+cfg       = base;
+cfg.label = 's02_fs_tau100fs_F01';
 cfg.pulse_duration = 100e-15;       % [s]
 cfg.fluence_focus  = 0.1;           % [J/cm^2]
 
 save_path = fullfile(results_dir, [cfg.label '.mat']);
+fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
+t0 = tic;
 if ~force_rerun && exist(save_path, 'file')
-    fprintf('[s02] Loading existing results.\n');
+    fprintf('— loaded\n');
 else
-    fprintf('[s02] Running...\n');
+    fprintf('— running...\n');
     results = run_pa_sim(cfg);
     save(save_path, 'results', '-v7.3');
-    fprintf('[s02] Saved: %s\n', save_path);
+    t_runs(end+1) = toc(t0);
+    fprintf('        done in %s\n', format_duration(t_runs(end)));
 end
+print_progress(sidx, n_total, t_start, t_runs);
 
 % =========================================================================
-% Scenario 3: FS burst mode, taup = 100 fs, Fp = 1 J/cm^2 per pulse
-%             tau_burst = 3 ns, N = 50:50:500
+% Scenario 3: FS burst mode, taup = 100 fs, Fp = 0.1 J/cm^2 per pulse
+%             tau_burst = 3 ns, N = 10:10:300
 %
 % tau_burst = 3 ns chosen to satisfy stress confinement (tau_stress ~ 3.3 ns).
 %
@@ -122,34 +141,60 @@ end
 % Mapped onto engine by:
 %   fluence_focus  = Fp * N   (total fluence over burst)
 %   pulse_duration = taup * N (effective duration — preserves I_peak)
-%
-% With tau_burst within stress confinement, energy superposition is a
-% valid approximation — no need to simulate each pulse individually.
 % =========================================================================
 taup      = 100e-15;    % fs pulse duration [s]
 Fp        = 0.1;        % fluence per pulse [J/cm^2]
-tau_burst = 3e-9;       % burst window [s] — recorded as metadata only
-N_list    = 10:10:300;
+tau_burst = 3e-9;       % burst window [s] — metadata only
 
 for N = N_list
-    cfg                = base;
-    cfg.label          = sprintf('s03_burst_N%03d', N);
-    cfg.pulse_duration = taup * N;  % effective duration [s]
-    cfg.fluence_focus  = Fp * N;    % total fluence [J/cm^2]
-
-    % Burst metadata (stored in cfg for reference, not used by engine)
-    cfg.burst_N        = N;
-    cfg.burst_taup     = taup;
-    cfg.burst_Fp       = Fp;
+    sidx      = sidx + 1;
+    cfg       = base;
+    cfg.label = sprintf('s03_burst_N%03d', N);
+    cfg.pulse_duration  = taup * N;
+    cfg.fluence_focus   = Fp * N;
+    cfg.burst_N         = N;
+    cfg.burst_taup      = taup;
+    cfg.burst_Fp        = Fp;
     cfg.burst_tau_burst = tau_burst;
 
     save_path = fullfile(results_dir, [cfg.label '.mat']);
+    fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
+    t0 = tic;
     if ~force_rerun && exist(save_path, 'file')
-        fprintf('[s03 N=%d] Loading existing results.\n', N);
+        fprintf('— loaded\n');
     else
-        fprintf('[s03 N=%d] Running...\n', N);
+        fprintf('— running...\n');
         results = run_pa_sim(cfg);
         save(save_path, 'results', '-v7.3');
-        fprintf('[s03 N=%d] Saved: %s\n', N, save_path);
+        t_runs(end+1) = toc(t0);
+        fprintf('        done in %s\n', format_duration(t_runs(end)));
+    end
+    print_progress(sidx, n_total, t_start, t_runs);
+end
+
+fprintf('\n=== All done | Total time: %s ===\n', format_duration(toc(t_start)));
+
+% =========================================================================
+% Local functions
+% =========================================================================
+function print_progress(sidx, n_total, t_start, t_runs)
+    elapsed = toc(t_start);
+    if isempty(t_runs)
+        fprintf('        elapsed: %s\n\n', format_duration(elapsed));
+        return;
+    end
+    remaining = n_total - sidx;
+    eta       = mean(t_runs) * remaining;
+    fprintf('        elapsed: %s | ETA: ~%s (%d remaining)\n\n', ...
+            format_duration(elapsed), format_duration(eta), remaining);
+end
+
+function s = format_duration(sec)
+    if sec < 60
+        s = sprintf('%.0fs', sec);
+    elseif sec < 3600
+        s = sprintf('%dm %02ds', floor(sec/60), floor(mod(sec,60)));
+    else
+        s = sprintf('%dh %02dm', floor(sec/3600), floor(mod(sec,3600)/60));
     end
 end
