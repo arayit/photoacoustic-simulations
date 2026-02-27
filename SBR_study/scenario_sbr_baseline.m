@@ -27,7 +27,7 @@ cfg.target_radius = 5e-6;           % [m]
 
 % --- Input radiation ---
 cfg.fluence_focus  = 20;            % [J/cm²]
-cfg.pulse_duration = 5e-9;          % [s]
+cfg.pulse_duration = 100e-15;          % [s]
 
 % --- Grüneisen ---
 cfg.Gamma = 0.12;
