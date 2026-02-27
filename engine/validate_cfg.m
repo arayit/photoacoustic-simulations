@@ -25,11 +25,11 @@ for k = 1:numel(required)
 end
 
 % -------------------------------------------------------------------------
-% Positive-definite scalars
+% Positive-definite scalars (must be > 0)
 % -------------------------------------------------------------------------
 positive = {'lambda','NA','n','target_depth','target_radius', ...
             'fluence_focus','pulse_duration','Gamma', ...
-            'mu_a_tissue','mu_s_tissue','mu_a_target','mu_s_target', ...
+            'mu_a_tissue','mu_s_tissue', ...
             'c_sound','rho','f_transducer','PPW_acoustic','n_elements', ...
             'z_max','y_max','PPW_optical','opt_margin'};
 
@@ -38,6 +38,19 @@ for k = 1:numel(positive)
     if ~isscalar(v) || ~isnumeric(v) || v <= 0
         error('validate_cfg: ''%s'' must be a positive scalar (got %s).', ...
               positive{k}, mat2str(v));
+    end
+end
+
+% -------------------------------------------------------------------------
+% Non-negative scalars (may be zero — e.g. contrast agent with no linear absorption)
+% -------------------------------------------------------------------------
+nonneg = {'mu_a_target', 'mu_s_target', 'alpha2_target', 'alpha3_target'};
+
+for k = 1:numel(nonneg)
+    v = cfg.(nonneg{k});
+    if ~isscalar(v) || ~isnumeric(v) || v < 0
+        error('validate_cfg: ''%s'' must be a non-negative scalar (got %s).', ...
+              nonneg{k}, mat2str(v));
     end
 end
 
