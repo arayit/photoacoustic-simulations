@@ -1,5 +1,5 @@
-kwave_sims/beam_focusing.m
-kwave_sims/pa_comparison_ns_vs_fs_unified.m
+engine/beam_focusing.m
+engine/pa_comparison_ns_vs_fs_unified.m
 *.mat
 *.dat
 *.csv
