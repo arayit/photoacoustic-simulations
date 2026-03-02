@@ -13,10 +13,10 @@ results_dir = fullfile(study_dir, 'results');
 
 % --- Reference scenarios ---
 s    = load(fullfile(results_dir, 's01_ns_tau3ns_F1.mat'),    'results');
-p_s01 = max(s.results.p0_opt(:));
+p_s01 = max(abs(s.results.sensor_data(:))) * 1e3;
 
 s    = load(fullfile(results_dir, 's02_fs_tau100fs_F01.mat'), 'results');
-p_s02 = max(s.results.p0_opt(:));
+p_s02 = max(abs(s.results.sensor_data(:))) * 1e3;
 
 % --- Burst series ---
 N_list  = 10:10:300;
@@ -26,7 +26,7 @@ for k = 1:numel(N_list)
     N     = N_list(k);
     fname = fullfile(results_dir, sprintf('s03_burst_N%03d.mat', N));
     s     = load(fname, 'results');
-    p_burst(k) = max(s.results.p0_opt(:));
+    p_burst(k) = max(abs(s.results.sensor_data(:))) * 1e3;
 end
 
 % --- Plot ---
@@ -40,8 +40,9 @@ yline(p_s01, 'r--', 'LineWidth', 1.5, ...
 yline(p_s02, 'k--', 'LineWidth', 1.5, ...
     'DisplayName', 'FS single pulse  (F = 0.1 J/cm², \tau = 100 fs)');
 
+set(gca, 'YScale', 'log');
 xlabel('N (pulses per burst)');
-ylabel('Peak p_0 (Pa)');
+ylabel('Peak detected pressure (mPa)');
 title('exp\_001 — Peak PA Signal vs Burst Pulse Number');
 legend('Location', 'northwest');
 grid on; box on;

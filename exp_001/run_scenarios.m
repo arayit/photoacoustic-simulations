@@ -35,7 +35,7 @@ study_dir   = fileparts(mfilename('fullpath'));
 addpath(fullfile(study_dir, '..', 'engine'));
 results_dir = fullfile(study_dir, 'results');
 
-force_rerun = false;
+force_rerun = true;
 
 % --- Progress tracking ---
 N_list    = 10:10:300;
