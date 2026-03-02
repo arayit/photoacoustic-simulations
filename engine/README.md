@@ -108,7 +108,7 @@ cfg
  ├─ 2. build_intensity_map      → I_map on acoustic grid (Beer-Lambert)
  ├─ 3. optical grid intensity   → I_opt_map at fine resolution near focus
  ├─ 4. build_property_maps      → mu_a, alpha2, alpha3 on optical grid
- ├─ 5. energy deposition        → Q = (μa·I + α2·I² + α3·I³)·τ  [J/m³]
+ ├─ 5. energy deposition        → Q = N·(μa·I + α2·I² + α3·I³)·τ  [J/m³]  (N=1 for single pulse)
  ├─ 6. initial pressure         → p0 = Γ·Q  [Pa]
  ├─ 7. interpolate p0           → optical grid → acoustic grid
  └─ 8. kspaceFirstOrder2D       → sensor_data [n_elements × Nt]
@@ -136,6 +136,9 @@ Two grids are used throughout:
 | `z_opt_vec`, `y_opt_vec` | vectors | Optical grid axes |
 | `element_y` | `[1 × n_elements]` | Transducer element positions |
 | `cfg` | struct | Full configuration — complete reproducibility |
+| `burst_N` | scalar | Number of pulses in burst (only present when `burst_N > 1`) |
+| `burst_tau` | scalar | Burst window duration [s] (only present when `burst_N > 1`) |
+| `burst_fR` | scalar | Intra-burst repetition rate [Hz] = `burst_N / burst_tau` (only present when `burst_N > 1`) |
 
 ---
 
@@ -157,8 +160,17 @@ Derived: `w0 = λ/(π·NA)`, `zR = π·w0²·n/λ`, `w_surface = w0·√(1+(z_fo
 
 | Parameter | Unit | Description |
 |-----------|------|-------------|
-| `fluence_focus` | J/cm² | Peak fluence at focus |
-| `pulse_duration` | s | Pulse duration |
+| `fluence_focus` | J/cm² | Peak fluence at focus — always per pulse |
+| `pulse_duration` | s | Single pulse duration |
+
+### Burst Mode (optional)
+
+| Parameter | Unit | Description |
+|-----------|------|-------------|
+| `burst_N` | — | Number of pulses per burst (default: 1, i.e. single pulse) |
+| `burst_tau` | s | Burst window duration — required when `burst_N > 1` |
+
+When `burst_N > 1`, the engine multiplies Q by N: `Q = burst_N · (μa·I + α2·I² + α3·I³) · τ_pulse`. The intra-burst repetition rate `f_R = burst_N / burst_tau` is derived and stored in results. `burst_tau` does not affect the simulated pressure — it is used only to characterise the laser and display `f_R`.
 
 ### Optical Properties
 
