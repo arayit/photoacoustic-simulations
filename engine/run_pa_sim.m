@@ -47,6 +47,14 @@ verbose  = true;
 if isfield(cfg, 'verbose'),  verbose  = cfg.verbose;  end
 pml_size = 20;
 if isfield(cfg, 'pml_size'), pml_size = cfg.pml_size; end
+burst_N   = 1;
+burst_tau = [];
+f_R       = [];
+if isfield(cfg, 'burst_N'),   burst_N   = cfg.burst_N;   end
+if isfield(cfg, 'burst_tau'), burst_tau = cfg.burst_tau; end
+if burst_N > 1
+    f_R = burst_N / burst_tau;
+end
 
 % --- Beam ---
 beam              = gaussian_beam_params(lambda, NA, n, target_depth);
@@ -95,7 +103,7 @@ end
     0, alpha2_target, 0, alpha3_target);
 
 % --- Energy deposition and initial pressure on optical grid ---
-Q_opt  = (mu_a_opt_map .* I_opt_map ...
+Q_opt  = burst_N * (mu_a_opt_map .* I_opt_map ...
         + alpha2_opt_map .* I_opt_map.^2 ...
         + alpha3_opt_map .* I_opt_map.^3) * pulse_duration;
 p0_opt = Gamma * Q_opt;
@@ -114,6 +122,12 @@ if verbose
     fprintf('  w_surf      = %.2f mm\n', beam.w_surface*1e3);
     fprintf('  I_focus     = %.2e W/m^2\n', I_focus_peak);
     fprintf('  I_surface   = %.2e W/m^2\n', I_surface_peak);
+    if burst_N > 1
+        fprintf('Burst mode:\n');
+        fprintf('  N           = %d pulses\n', burst_N);
+        fprintf('  tau_burst   = %.1f ns\n', burst_tau*1e9);
+        fprintf('  f_R         = %.2f GHz\n', f_R*1e-9);
+    end
     fprintf('\nGlobal grid:  %d x %d pts  (dx = %.1f um)\n', Nz, Ny, dx_acoustic*1e6);
     fprintf('Optical grid: %d x %d pts  (dz = %.0f nm, dy = %.0f nm)\n', ...
         length(z_opt_vec), length(y_opt_vec), dz_optical*1e9, dy_optical*1e9);
@@ -168,6 +182,11 @@ end
 
 % --- Pack results ---
 results.sensor_data  = sensor_data;
+if burst_N > 1
+    results.burst_N   = burst_N;
+    results.burst_tau = burst_tau;
+    results.burst_fR  = f_R;
+end
 results.t_array      = kgrid.t_array;   % plain double — load without k-Wave
 results.kgrid        = kgrid;
 results.p0_acoustic  = p0_acoustic;

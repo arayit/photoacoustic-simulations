@@ -43,9 +43,19 @@ else
     fig_title = 'Photoacoustic Simulation';
 end
 
+burst_subtitle = '';
+if isfield(cfg, 'burst_N') && cfg.burst_N > 1
+    f_R_viz = cfg.burst_N / cfg.burst_tau;
+    burst_subtitle = sprintf('Burst: N=%d,  \\tau_{burst}=%.0f ns,  f_R=%.2f GHz', ...
+        cfg.burst_N, cfg.burst_tau*1e9, f_R_viz*1e-9);
+end
+
 figure('Color', 'k', 'Position', [80 80 1400 480]);
 tl = tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact');
 title(tl, fig_title, 'Color', 'w', 'FontSize', 13);
+if ~isempty(burst_subtitle)
+    subtitle(tl, burst_subtitle, 'Color', [0.75 0.75 0.75], 'FontSize', 11);
+end
 
 % --- Panel 1: p0 on optical grid ---
 ax1 = nexttile;

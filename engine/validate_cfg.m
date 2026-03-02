@@ -78,6 +78,26 @@ if cfg.target_radius > cfg.y_max
 end
 
 % -------------------------------------------------------------------------
+% Optional: burst_N (positive integer) and burst_tau (required if burst_N > 1)
+% -------------------------------------------------------------------------
+if isfield(cfg, 'burst_N')
+    v = cfg.burst_N;
+    if ~isscalar(v) || ~isnumeric(v) || v < 1 || floor(v) ~= v
+        error('validate_cfg: ''burst_N'' must be a positive integer (got %s).', mat2str(v));
+    end
+    if v > 1 && ~isfield(cfg, 'burst_tau')
+        error('validate_cfg: ''burst_tau'' (burst window duration) is required when burst_N > 1.');
+    end
+end
+
+if isfield(cfg, 'burst_tau')
+    v = cfg.burst_tau;
+    if ~isscalar(v) || ~isnumeric(v) || v <= 0
+        error('validate_cfg: ''burst_tau'' must be a positive scalar (got %s).', mat2str(v));
+    end
+end
+
+% -------------------------------------------------------------------------
 % Warnings (physically possible but likely unintended)
 % -------------------------------------------------------------------------
 pml_size = 20;

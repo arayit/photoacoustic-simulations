@@ -133,29 +133,22 @@ print_progress(sidx, n_total, t_start, t_runs);
 %             tau_burst = 3 ns, N = 10:10:300
 %
 % tau_burst = 3 ns chosen to satisfy stress confinement (tau_stress ~ 3.3 ns).
+% Intra-burst repetition rate: f_R = N / tau_burst  (derived by engine).
 %
-% Model: burst of N identical fs pulses, energy superposition assumed.
-%   I_peak = Fp / taup  (peak intensity per pulse)
-%   Q      = (mu_a*I_peak + alpha2*I_peak^2) * taup * N
-%
-% Mapped onto engine by:
-%   fluence_focus  = Fp * N   (total fluence over burst)
-%   pulse_duration = taup * N (effective duration — preserves I_peak)
+% Q per burst = N * (mu_a*I_peak + alpha2*I_peak^2) * taup
 % =========================================================================
 taup      = 100e-15;    % fs pulse duration [s]
 Fp        = 0.1;        % fluence per pulse [J/cm^2]
-tau_burst = 3e-9;       % burst window [s] — metadata only
+tau_burst = 3e-9;       % burst window [s]
 
 for N = N_list
     sidx      = sidx + 1;
     cfg       = base;
     cfg.label = sprintf('s03_burst_N%03d', N);
-    cfg.pulse_duration  = taup * N;
-    cfg.fluence_focus   = Fp * N;
-    cfg.burst_N         = N;
-    cfg.burst_taup      = taup;
-    cfg.burst_Fp        = Fp;
-    cfg.burst_tau_burst = tau_burst;
+    cfg.pulse_duration = taup;
+    cfg.fluence_focus  = Fp;
+    cfg.burst_N        = N;
+    cfg.burst_tau      = tau_burst;
 
     save_path = fullfile(results_dir, [cfg.label '.mat']);
     fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
