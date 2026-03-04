@@ -47,8 +47,10 @@ verbose  = true;
 if isfield(cfg, 'verbose'),  verbose  = cfg.verbose;  end
 pml_size = 20;
 if isfield(cfg, 'pml_size'), pml_size = cfg.pml_size; end
-snr_dB   = Inf;                         % default: no noise
-if isfield(cfg, 'snr_dB'),   snr_dB   = cfg.snr_dB;  end
+snr_dB        = Inf;                    % default: no noise
+if isfield(cfg, 'snr_dB'),        snr_dB        = cfg.snr_dB;        end
+f_max_acoustic = Inf;                   % default: no low-pass filtering
+if isfield(cfg, 'f_max_acoustic'), f_max_acoustic = cfg.f_max_acoustic; end
 burst_N   = 1;
 burst_tau = [];
 f_R       = [];
@@ -188,6 +190,24 @@ if gpuDeviceCount > 0
     sensor_data = gather(sensor_data);
 end
 
+% --- Low-pass filter at f_max_acoustic ---
+if isfinite(f_max_acoustic)
+    fs = 1 / kgrid.dt;
+    Wn = f_max_acoustic / (fs / 2);
+    if Wn >= 1
+        warning('run_pa_sim: f_max_acoustic (%.1f MHz) >= Nyquist (%.1f MHz); skipping filter.', ...
+                f_max_acoustic*1e-6, fs/2*1e-6);
+    else
+        [b, a] = butter(5, Wn, 'low');
+        for ie = 1:size(sensor_data, 1)
+            sensor_data(ie, :) = filtfilt(b, a, double(sensor_data(ie, :)));
+        end
+        if verbose
+            fprintf('Low-pass filter applied: f_max = %.1f MHz\n', f_max_acoustic*1e-6);
+        end
+    end
+end
+
 % --- Add noise ---
 if isfinite(snr_dB)
     sensor_data = addNoise(sensor_data, snr_dB, 'peak');
@@ -203,7 +223,8 @@ end
 
 % --- Pack results ---
 results.sensor_data  = sensor_data;
-results.snr_dB       = snr_dB;         % Inf when no noise was added
+results.snr_dB        = snr_dB;         % Inf when no noise was added
+results.f_max_acoustic = f_max_acoustic; % Inf when no filter was applied
 if burst_N > 1
     results.burst_N   = burst_N;
     results.burst_tau = burst_tau;

@@ -104,6 +104,13 @@ if isfield(cfg, 'snr_dB')
     end
 end
 
+if isfield(cfg, 'f_max_acoustic')
+    v = cfg.f_max_acoustic;
+    if ~isscalar(v) || ~isnumeric(v) || v <= 0
+        error('validate_cfg: ''f_max_acoustic'' must be a positive scalar in Hz (got %s).', mat2str(v));
+    end
+end
+
 % -------------------------------------------------------------------------
 % Warnings (physically possible but likely unintended)
 % -------------------------------------------------------------------------

@@ -142,6 +142,7 @@ Two grids are used throughout:
 | `beam_y_center` | scalar | Beam lateral offset [m] (only present when non-zero) |
 | `target_y` | scalar | Target lateral position [m] (only present when non-zero) |
 | `snr_dB` | scalar | SNR used for noise addition [dB, peak-referenced] — `Inf` when no noise was added |
+| `f_max_acoustic` | scalar | Low-pass cut-off frequency [Hz] — `Inf` when no filter was applied |
 
 ---
 
@@ -174,6 +175,14 @@ Derived: `w0 = λ/(π·NA)`, `zR = π·w0²·n/λ`, `w_surface = w0·√(1+(z_fo
 | `burst_tau` | s | Burst window duration — required when `burst_N > 1` |
 
 When `burst_N > 1`, the engine multiplies Q by N: `Q = burst_N · (μa·I + α2·I² + α3·I³) · τ_pulse`. The intra-burst repetition rate `f_R = burst_N / burst_tau` is derived and stored in results. `burst_tau` does not affect the simulated pressure — it is used only to characterise the laser and display `f_R`.
+
+### Acoustic bandwidth limit (optional)
+
+| Parameter | Unit | Description |
+|-----------|------|-------------|
+| `f_max_acoustic` | Hz | Low-pass cut-off frequency applied to `sensor_data` after k-Wave. Models the maximum acoustic frequency that propagates meaningfully in tissue. A 5th-order zero-phase Butterworth filter (`filtfilt`) is applied per element. Omit or set to `Inf` to retain all frequencies (default). |
+
+Applied **before** noise so that detector noise remains within the signal band.
 
 ### Noise (optional)
 
