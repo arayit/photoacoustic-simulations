@@ -47,6 +47,8 @@ verbose  = true;
 if isfield(cfg, 'verbose'),  verbose  = cfg.verbose;  end
 pml_size = 20;
 if isfield(cfg, 'pml_size'), pml_size = cfg.pml_size; end
+snr_dB   = Inf;                         % default: no noise
+if isfield(cfg, 'snr_dB'),   snr_dB   = cfg.snr_dB;  end
 burst_N   = 1;
 burst_tau = [];
 f_R       = [];
@@ -186,6 +188,14 @@ if gpuDeviceCount > 0
     sensor_data = gather(sensor_data);
 end
 
+% --- Add noise ---
+if isfinite(snr_dB)
+    sensor_data = addNoise(sensor_data, snr_dB, 'peak');
+    if verbose
+        fprintf('Noise added: SNR = %.1f dB (peak-referenced)\n', snr_dB);
+    end
+end
+
 if verbose
     fprintf('Done. Sensor data: %d elements x %d time steps\n', ...
         size(sensor_data, 1), size(sensor_data, 2));
@@ -193,6 +203,7 @@ end
 
 % --- Pack results ---
 results.sensor_data  = sensor_data;
+results.snr_dB       = snr_dB;         % Inf when no noise was added
 if burst_N > 1
     results.burst_N   = burst_N;
     results.burst_tau = burst_tau;

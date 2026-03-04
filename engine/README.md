@@ -141,6 +141,7 @@ Two grids are used throughout:
 | `burst_fR` | scalar | Intra-burst repetition rate [Hz] = `burst_N / burst_tau` (only present when `burst_N > 1`) |
 | `beam_y_center` | scalar | Beam lateral offset [m] (only present when non-zero) |
 | `target_y` | scalar | Target lateral position [m] (only present when non-zero) |
+| `snr_dB` | scalar | SNR used for noise addition [dB, peak-referenced] — `Inf` when no noise was added |
 
 ---
 
@@ -173,6 +174,14 @@ Derived: `w0 = λ/(π·NA)`, `zR = π·w0²·n/λ`, `w_surface = w0·√(1+(z_fo
 | `burst_tau` | s | Burst window duration — required when `burst_N > 1` |
 
 When `burst_N > 1`, the engine multiplies Q by N: `Q = burst_N · (μa·I + α2·I² + α3·I³) · τ_pulse`. The intra-burst repetition rate `f_R = burst_N / burst_tau` is derived and stored in results. `burst_tau` does not affect the simulated pressure — it is used only to characterise the laser and display `f_R`.
+
+### Noise (optional)
+
+| Parameter | Unit | Description |
+|-----------|------|-------------|
+| `snr_dB` | dB | Peak-referenced SNR — Gaussian noise is added to `sensor_data` via k-Wave's `addNoise`. Omit or set to `Inf` for a noise-free simulation (default). |
+
+Noise is added **after** k-Wave propagation and GPU gather, so it models detector/electronic noise rather than acoustic noise. The same seed is not fixed — each run produces a different noise realisation.
 
 ### Scanning / OR-PAM (optional)
 

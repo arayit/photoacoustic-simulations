@@ -97,6 +97,13 @@ if isfield(cfg, 'burst_tau')
     end
 end
 
+if isfield(cfg, 'snr_dB')
+    v = cfg.snr_dB;
+    if ~isscalar(v) || ~isnumeric(v) || v <= 0
+        error('validate_cfg: ''snr_dB'' must be a positive scalar in dB (got %s).', mat2str(v));
+    end
+end
+
 % -------------------------------------------------------------------------
 % Warnings (physically possible but likely unintended)
 % -------------------------------------------------------------------------
