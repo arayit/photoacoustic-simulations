@@ -56,6 +56,11 @@ if burst_N > 1
     f_R = burst_N / burst_tau;
 end
 
+beam_y_center = 0;
+target_y      = 0;
+if isfield(cfg, 'beam_y_center'), beam_y_center = cfg.beam_y_center; end
+if isfield(cfg, 'target_y'),      target_y      = cfg.target_y;      end
+
 % --- Beam ---
 beam              = gaussian_beam_params(lambda, NA, n, target_depth);
 fluence_focus_si  = fluence_focus * 1e4;            % J/cm² → J/m²
@@ -77,15 +82,16 @@ dy_optical   = beam.w0 / PPW_optical;
 opt_half_ext = opt_margin * target_radius;
 z_opt_vec    = linspace(target_depth - opt_half_ext, target_depth + opt_half_ext, ...
                         round(2*opt_half_ext / dz_optical));
-y_opt_vec    = linspace(-opt_half_ext, opt_half_ext, ...
+y_opt_vec    = linspace(beam_y_center - opt_half_ext, beam_y_center + opt_half_ext, ...
                         round(2*opt_half_ext / dy_optical));
 
 % --- Property maps on global grid ---
 [~, mu_t_map] = build_property_maps(z_vec, y_vec, ...
-    mu_a_tissue, mu_t_tissue, mu_a_target, mu_t_target, target_depth, target_radius);
+    mu_a_tissue, mu_t_tissue, mu_a_target, mu_t_target, target_depth, target_radius, ...
+    0, 0, 0, 0, target_y);
 
 % --- Intensity on global grid (Beer-Lambert) ---
-[I_map, acc_att_vec] = build_intensity_map(beam, z_vec, y_vec, I_surface_peak, mu_t_map);
+[I_map, acc_att_vec] = build_intensity_map(beam, z_vec, y_vec, I_surface_peak, mu_t_map, beam_y_center);
 
 % --- Intensity on optical grid ---
 acc_att_opt = interp1(z_vec, acc_att_vec, z_opt_vec, 'linear');
@@ -94,13 +100,13 @@ for iz = 1:length(z_opt_vec)
     delta_z          = z_opt_vec(iz) - beam.z_focus;
     w_z              = beam.w0 * sqrt(1 + (delta_z / beam.zR)^2);
     I_opt_map(iz, :) = I_surface_peak * (beam.w_surface / w_z)^2 ...
-                       .* exp(-2 * y_opt_vec.^2 / w_z^2) * exp(-acc_att_opt(iz));
+                       .* exp(-2 * (y_opt_vec - beam_y_center).^2 / w_z^2) * exp(-acc_att_opt(iz));
 end
 
 % --- Property maps on optical grid ---
 [mu_a_opt_map, ~, alpha2_opt_map, alpha3_opt_map] = build_property_maps(z_opt_vec, y_opt_vec, ...
     mu_a_tissue, mu_t_tissue, mu_a_target, mu_t_target, target_depth, target_radius, ...
-    0, alpha2_target, 0, alpha3_target);
+    0, alpha2_target, 0, alpha3_target, target_y);
 
 % --- Energy deposition and initial pressure on optical grid ---
 Q_opt  = burst_N * (mu_a_opt_map .* I_opt_map ...
@@ -122,6 +128,11 @@ if verbose
     fprintf('  w_surf      = %.2f mm\n', beam.w_surface*1e3);
     fprintf('  I_focus     = %.2e W/m^2\n', I_focus_peak);
     fprintf('  I_surface   = %.2e W/m^2\n', I_surface_peak);
+    if beam_y_center ~= 0 || target_y ~= 0
+        fprintf('Scanning:\n');
+        fprintf('  beam_y      = %.1f um\n', beam_y_center*1e6);
+        fprintf('  target_y    = %.1f um\n', target_y*1e6);
+    end
     if burst_N > 1
         fprintf('Burst mode:\n');
         fprintf('  N           = %d pulses\n', burst_N);
@@ -201,3 +212,7 @@ results.z_opt_vec    = z_opt_vec;
 results.y_opt_vec    = y_opt_vec;
 results.element_y    = element_y;
 results.cfg          = cfg;
+if beam_y_center ~= 0 || target_y ~= 0
+    results.beam_y_center = beam_y_center;
+    results.target_y      = target_y;
+end

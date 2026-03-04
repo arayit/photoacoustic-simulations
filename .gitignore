@@ -1,7 +1,9 @@
+.claude/
 engine/beam_focusing.m
 engine/pa_comparison_ns_vs_fs_unified.m
 *.mat
-!exp_*/results/*.mat
+!exp_001/results/*.mat
+!exp_002/results/*.mat
 !SBR_study/*.mat
 *.dat
 *.csv

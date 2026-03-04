@@ -139,6 +139,8 @@ Two grids are used throughout:
 | `burst_N` | scalar | Number of pulses in burst (only present when `burst_N > 1`) |
 | `burst_tau` | scalar | Burst window duration [s] (only present when `burst_N > 1`) |
 | `burst_fR` | scalar | Intra-burst repetition rate [Hz] = `burst_N / burst_tau` (only present when `burst_N > 1`) |
+| `beam_y_center` | scalar | Beam lateral offset [m] (only present when non-zero) |
+| `target_y` | scalar | Target lateral position [m] (only present when non-zero) |
 
 ---
 
@@ -171,6 +173,17 @@ Derived: `w0 = λ/(π·NA)`, `zR = π·w0²·n/λ`, `w_surface = w0·√(1+(z_fo
 | `burst_tau` | s | Burst window duration — required when `burst_N > 1` |
 
 When `burst_N > 1`, the engine multiplies Q by N: `Q = burst_N · (μa·I + α2·I² + α3·I³) · τ_pulse`. The intra-burst repetition rate `f_R = burst_N / burst_tau` is derived and stored in results. `burst_tau` does not affect the simulated pressure — it is used only to characterise the laser and display `f_R`.
+
+### Scanning / OR-PAM (optional)
+
+| Parameter | Unit | Description |
+|-----------|------|-------------|
+| `beam_y_center` | m | Lateral position of the beam axis (default: 0 — on-axis) |
+| `target_y` | m | Lateral position of the target centre (default: 0 — on-axis) |
+
+Both parameters default to `0`, so all existing single-position scenarios run identically without modification.
+
+When scanning, set `beam_y_center` to the current scan position and `target_y` to the absorber's true lateral coordinate. The optical grid automatically follows the beam (`y_opt_vec` is centred at `beam_y_center`). If the target falls outside the optical grid (i.e. `|target_y − beam_y_center| > opt_margin · target_radius`) it contributes no energy deposition — correct physics for a non-illuminated absorber. The Beer-Lambert intensity map on the acoustic grid is also shifted accordingly.
 
 ### Optical Properties
 
