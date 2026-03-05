@@ -19,12 +19,12 @@ clearvars; close all; clc;
 %
 % Total: 7 x 11 = 77 scenarios
 %
-% Contrast agent: BODIPY-TR at 1 mM
+% Contrast agent: BODIPY-TR at 10 mM
 %   mu_a_target   = 0
-%   alpha2_target = 9e-14   [m/W]  ~280 GM at 1 mM
+%   alpha2_target = 9e-13   [m/W]  ~280 GM at 10 mM
 %   alpha3_target = 0
 %
-% Grid: z_max = 7 mm fixed (>= 2 mm clearance at all depths)
+% Grid: z_max = target_depth + 2 mm  (dynamic — minimises grid size)
 % Noise: snr_dB = 40 dB
 % =========================================================================
 
@@ -78,7 +78,7 @@ base.mu_s_tissue   = 91;
 
 base.mu_a_target   = 0;
 base.mu_s_target   = 0;
-base.alpha2_target = 9e-14;         % [m/W] — ~280 GM at 1 mM
+base.alpha2_target = 9e-13;         % [m/W] — ~280 GM at 10 mM
 base.alpha3_target = 0;
 
 base.c_sound       = 1500;
@@ -90,7 +90,7 @@ base.f_transducer  = 50e6;
 base.PPW_acoustic  = 10;
 base.n_elements    = 128;
 
-base.z_max         = 7e-3;          % [m] — fixed, >= 2 mm clearance at all depths
+% z_max set dynamically per scenario (target_depth + 2 mm)
 base.y_max         = 1.5e-3;
 base.PPW_optical   = 5;
 base.opt_margin    = 5;
@@ -114,6 +114,7 @@ for pt = pulse_types
         depth_um  = round(depth * 1e6);
         cfg.label         = sprintf('%s_d%04dum', pt.tag, depth_um);
         cfg.target_depth  = depth;
+        cfg.z_max         = depth + 2e-3;   % dynamic: 2 mm clearance below target
         cfg.pulse_duration = pt.pulse_duration;
         cfg.fluence_focus  = pt.fluence_focus;
 

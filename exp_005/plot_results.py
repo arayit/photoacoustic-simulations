@@ -69,7 +69,7 @@ def fig_depth_comparison():
 
     ax.set_xlabel('Target depth  [mm]')
     ax.set_ylabel('Peak pressure  [Pa]')
-    ax.set_title('exp_005 — Peak PA Pressure vs Depth\n(BODIPY-TR 1 mM, NA=0.55)')
+    ax.set_title('exp_005 — Peak PA Pressure vs Depth\n(BODIPY-TR 10 mM, NA=0.55)')
     ax.legend(framealpha=0.9, fontsize=8)
     ax.set_xlim(left=0)
     ax.yaxis.set_major_formatter(
