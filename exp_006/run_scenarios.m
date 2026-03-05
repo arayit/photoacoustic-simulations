@@ -15,9 +15,9 @@ clearvars; close all; clc;
 %   ...
 %   b300    : FS burst N = 300
 %
-% Depths (18):  0.5, 1.0, 1.5, 2.0, ... , 9.0 mm  (500 um steps)
+% Depths (30):  0.1, 0.2, 0.3, ... , 3.0 mm  (100 um steps)
 %
-% Total: 17 x 18 = 306 scenarios
+% Total: 17 x 30 = 510 scenarios
 %
 % Contrast agent: BODIPY-TR at 10 mM
 %   mu_a_target   = 0       (no linear absorption at 1064 nm)
@@ -26,7 +26,7 @@ clearvars; close all; clc;
 %
 % Key change from exp_005:
 %   NA = 0.50  (was 0.55)
-%   Depth range extended to 9 mm (was 5 mm)
+%   Depth range: 0.1-3.0 mm, 100 um steps (30 depths)
 %   Burst sweep: N = 20:20:300 (15 values, was 5)
 %
 % Grid: z_max = target_depth + 2 mm  (dynamic)
@@ -43,7 +43,7 @@ if ~exist(results_dir, 'dir'), mkdir(results_dir); end
 force_rerun = true;
 
 % --- Depth sweep ---
-depth_list = (0.5 : 0.5 : 9.0) * 1e-3;   % [m]  18 depths
+depth_list = (0.1 : 0.1 : 3.0) * 1e-3;   % [m]  30 depths
 
 % --- Pulse types ---
 pulse_types = struct();
