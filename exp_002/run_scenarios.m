@@ -3,51 +3,66 @@ clearvars; close all; clc;
 % =========================================================================
 % exp_002 — Run all scenarios and save results
 %
-% Identical to exp_001 with all fluence values 10× stronger:
-%   s01: F  = 10 J/cm²   (was 1)
-%   s02: Fp = 1  J/cm²   (was 0.1)
-%   s03: Fp = 1  J/cm²   (was 0.1)
+% Three scenarios:
+%   s01: NS single pulse,  tau  = 3 ns,   F  = 10 J/cm²
+%   s02: FS single pulse,  taup = 100 fs, Fp = 1  J/cm²
+%   s03: FS burst mode,    taup = 100 fs, Fp = 1  J/cm²  per pulse,
+%        tau_burst = 3 ns, N = 10:10:300
 %
-% Common parameters:
+% NOTE on burst mode encoding (s03)
+%   pulse_duration = taup  (single-pulse duration — NOT taup*N)
+%   fluence_focus  = Fp    (per-pulse fluence     — NOT Fp*N)
+%   burst_N        = N
+%   Engine: Q = burst_N * alpha2 * I^2 * pulse_duration  [J/m^3]
+%   This gives Q proportional to N (linear), which is correct physics.
+%   A previous version mistakenly passed taup*N and Fp*N, giving N^2 scaling.
+%
+% Contrast agent: BODIPY-TR
+%   mu_a_target   = 0       (no linear absorption at 1064 nm)
+%   alpha2_target = 9e-14   [m/W]  ~280 GM at 1 mM
+%   alpha3_target = 0
+%
+% Noise model:
+%   snr_dB = 40   [dB, peak-referenced Gaussian noise via k-Wave addNoise]
+%
+% Common parameters (held constant across all scenarios):
 %   lambda       = 1064 nm
 %   NA           = 0.55
 %   target_depth = 3 mm
-%   contrast agent: BODIPY-TR (alpha1=0, alpha2=9e-14 m/W, alpha3=0)
-%
-% Assumed (not scenario-specific, held constant):
-%   target_radius = 5 um
-%   n             = 1.33  (water/tissue)
-%   Gamma         = 0.12
-%   mu_a_tissue   = 18  m^-1  @ 1064 nm
-%   mu_s_tissue   = 91  m^-1  @ 1064 nm
-%   mu_s_target   = 0         (dye in solution — negligible scattering)
-%   c_sound       = 1500 m/s
-%   rho           = 1000 kg/m^3
-%   alpha_coeff   = 0.75 dB/MHz^y/cm
-%   alpha_power   = 1.5
-%   f_transducer  = 50 MHz
-%   PPW_acoustic  = 10
-%   n_elements    = 128
-%   z_max         = 6 mm
-%   y_max         = 1.5 mm
-%   PPW_optical   = 5
-%   opt_margin    = 5
-%   pml_size      = 40
+%   target_radius= 5 um
+%   n            = 1.33  (water/tissue)
+%   Gamma        = 0.12
+%   mu_a_tissue  = 18  m^-1  @ 1064 nm
+%   mu_s_tissue  = 91  m^-1  @ 1064 nm
+%   mu_s_target  = 0         (dye in solution)
+%   c_sound      = 1500 m/s
+%   rho          = 1000 kg/m^3
+%   alpha_coeff  = 0.75 dB/MHz^y/cm
+%   alpha_power  = 1.5
+%   f_transducer = 50 MHz
+%   PPW_acoustic = 10
+%   n_elements   = 128
+%   z_max        = 6 mm
+%   y_max        = 1.5 mm
+%   PPW_optical  = 5
+%   opt_margin   = 5
+%   pml_size     = 40
 % =========================================================================
 
 % --- Paths ---
 study_dir   = fileparts(mfilename('fullpath'));
 addpath(fullfile(study_dir, '..', 'engine'));
 results_dir = fullfile(study_dir, 'results');
+if ~exist(results_dir, 'dir'), mkdir(results_dir); end
 
-force_rerun = false;
+force_rerun = true;   % re-run all: burst bug fixed + noise added
 
 % --- Progress tracking ---
 N_list    = 10:10:300;
 n_total   = 2 + numel(N_list);     % s01 + s02 + 30 burst = 32
-sidx      = 0;                      % scenario counter
-t_runs    = [];                     % elapsed time per completed run (for ETA)
-t_start   = tic;                    % wall clock for total elapsed
+sidx      = 0;
+t_runs    = [];
+t_start   = tic;
 
 % =========================================================================
 % Base cfg — shared across all scenarios
@@ -62,9 +77,9 @@ base.Gamma         = 0.12;
 base.mu_a_tissue   = 18;            % [m^-1]
 base.mu_s_tissue   = 91;            % [m^-1]
 
-% BODIPY-TR: no linear absorption, TPA only
-base.mu_a_target   = 0;             % alpha1 = 0
-base.mu_s_target   = 0;             % dye solution — no scattering
+% BODIPY-TR: no linear absorption at 1064 nm, TPA only
+base.mu_a_target   = 0;
+base.mu_s_target   = 0;
 base.alpha2_target = 9e-14;         % [m/W] — ~280 GM at 1 mM
 base.alpha3_target = 0;
 
@@ -82,7 +97,11 @@ base.y_max         = 1.5e-3;        % [m]
 base.PPW_optical   = 5;
 base.opt_margin    = 5;
 base.pml_size      = 40;
-base.verbose       = false;         % suppress engine output — progress shown here
+
+% Noise model — 40 dB peak-referenced Gaussian noise (detector/electronic)
+base.snr_dB        = 40;
+
+base.verbose       = false;
 
 fprintf('=== exp_002 | %d scenarios | %s ===\n\n', n_total, datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 
@@ -91,17 +110,17 @@ fprintf('=== exp_002 | %d scenarios | %s ===\n\n', n_total, datestr(now, 'yyyy-m
 % =========================================================================
 sidx      = sidx + 1;
 cfg       = base;
-cfg.label = 's01_ns_tau3ns_F10';
+cfg.label          = 's01_ns_tau3ns_F10';
 cfg.pulse_duration = 3e-9;          % [s]
-cfg.fluence_focus  = 10;            % [J/cm^2]  — 10x exp_001
+cfg.fluence_focus  = 10;            % [J/cm^2]
 
 save_path = fullfile(results_dir, [cfg.label '.mat']);
 fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
 t0 = tic;
 if ~force_rerun && exist(save_path, 'file')
-    fprintf('— loaded\n');
+    fprintf('-- loaded\n');
 else
-    fprintf('— running...\n');
+    fprintf('-- running...\n');
     results = run_pa_sim(cfg);
     save(save_path, 'results', '-v7.3');
     t_runs(end+1) = toc(t0);
@@ -114,17 +133,17 @@ print_progress(sidx, n_total, t_start, t_runs);
 % =========================================================================
 sidx      = sidx + 1;
 cfg       = base;
-cfg.label = 's02_fs_tau100fs_F1';
+cfg.label          = 's02_fs_tau100fs_F1';
 cfg.pulse_duration = 100e-15;       % [s]
-cfg.fluence_focus  = 1;             % [J/cm^2]  — 10x exp_001
+cfg.fluence_focus  = 1;             % [J/cm^2]
 
 save_path = fullfile(results_dir, [cfg.label '.mat']);
 fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
 t0 = tic;
 if ~force_rerun && exist(save_path, 'file')
-    fprintf('— loaded\n');
+    fprintf('-- loaded\n');
 else
-    fprintf('— running...\n');
+    fprintf('-- running...\n');
     results = run_pa_sim(cfg);
     save(save_path, 'results', '-v7.3');
     t_runs(end+1) = toc(t0);
@@ -134,30 +153,35 @@ print_progress(sidx, n_total, t_start, t_runs);
 
 % =========================================================================
 % Scenario 3: FS burst mode, taup = 100 fs, Fp = 1 J/cm^2 per pulse
-%             tau_burst = 3 ns, N = 10:10:300
+%             tau_burst = 3 ns (metadata), N = 10:10:300
+%
+% ENCODING: pass per-pulse values — burst_N handles the N-fold scaling.
+%   I_peak = Fp / taup   (correct single-pulse intensity)
+%   Q      = N * alpha2 * I_peak^2 * taup   (N * single-pulse deposition)
 % =========================================================================
-taup      = 100e-15;    % fs pulse duration [s]
-Fp        = 1;          % fluence per pulse [J/cm^2]  — 10x exp_001
-tau_burst = 3e-9;       % burst window [s] — metadata only
+taup      = 100e-15;    % single fs pulse duration [s]
+Fp        = 1;          % per-pulse fluence [J/cm^2]
+tau_burst = 3e-9;       % burst window [s] — metadata / f_R computation only
 
 for N = N_list
     sidx      = sidx + 1;
     cfg       = base;
-    cfg.label = sprintf('s03_burst_N%03d', N);
-    cfg.pulse_duration  = taup * N;
-    cfg.fluence_focus   = Fp * N;
-    cfg.burst_N         = N;
-    cfg.burst_taup      = taup;
-    cfg.burst_Fp        = Fp;
-    cfg.burst_tau       = tau_burst;
+    cfg.label          = sprintf('s03_burst_N%03d', N);
+    cfg.pulse_duration = taup;          % single-pulse duration [s]
+    cfg.fluence_focus  = Fp;            % per-pulse fluence [J/cm^2]
+    cfg.burst_N        = N;
+    cfg.burst_tau      = tau_burst;
+    % Informational fields (not used by engine):
+    cfg.burst_taup     = taup;
+    cfg.burst_Fp       = Fp;
 
     save_path = fullfile(results_dir, [cfg.label '.mat']);
     fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
     t0 = tic;
     if ~force_rerun && exist(save_path, 'file')
-        fprintf('— loaded\n');
+        fprintf('-- loaded\n');
     else
-        fprintf('— running...\n');
+        fprintf('-- running...\n');
         results = run_pa_sim(cfg);
         save(save_path, 'results', '-v7.3');
         t_runs(end+1) = toc(t0);
