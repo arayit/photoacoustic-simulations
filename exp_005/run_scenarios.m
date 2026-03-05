@@ -1,7 +1,7 @@
 clearvars; close all; clc;
 
 % =========================================================================
-% exp_004 — Run all scenarios and save results
+% exp_005 — Run all scenarios and save results
 %
 % Identical to exp_002 with BODIPY-TR concentration 10x higher:
 %   alpha2_target = 9e-13 m/W   (~280 GM at 10 mM)
@@ -30,7 +30,7 @@ clearvars; close all; clc;
 % Common parameters (held constant across all scenarios):
 %   lambda       = 1064 nm
 %   NA           = 0.55
-%   target_depth = 3 mm
+%   target_depth = 2.5 mm
 %   target_radius= 5 um
 %   n            = 1.33  (water/tissue)
 %   Gamma        = 0.12
@@ -72,7 +72,7 @@ t_start   = tic;
 base.lambda        = 1064e-9;       % [m]
 base.NA            = 0.55;
 base.n             = 1.33;
-base.target_depth  = 3e-3;          % [m]
+base.target_depth  = 2.5e-3;          % [m]
 base.target_radius = 5e-6;          % [m]
 base.Gamma         = 0.12;
 
@@ -105,7 +105,7 @@ base.snr_dB        = 40;
 
 base.verbose       = false;
 
-fprintf('=== exp_004 | %d scenarios | %s ===\n\n', n_total, datestr(now, 'yyyy-mm-dd HH:MM:SS'));
+fprintf('=== exp_005 | %d scenarios | %s ===\n\n', n_total, datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 
 % =========================================================================
 % Scenario 1: NS single pulse, tau = 3 ns, F = 10 J/cm^2
