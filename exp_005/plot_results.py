@@ -1,10 +1,12 @@
 """
-exp_005/plot_results.py  —  Depth study: peak PA pressure vs target depth.
+exp_005/plot_results.py  —  Depth study visualisation.
 
-Loads all exp_005 results and generates a peak-pressure vs depth plot
-with one curve per pulse type.
+For every scenario (7 pulse types x 11 depths = 77 total):
+  Generates 6 standard figures: intensity_map, Q0_map, p0_map,
+  waveform, spectrum, bscan  ->  LAB_PC_DRIVE/exp_005/<label>/
 
-Output: LAB_PC_DRIVE/exp_005/peak_pressure_vs_depth.<fmt>
+Also generates a summary comparison plot:
+  peak_pressure_vs_depth.<fmt>  ->  LAB_PC_DRIVE/exp_005/
 
 Usage:
   python plot_results.py [--dpi N] [--fmt png|pdf|svg] [--show]
@@ -27,22 +29,30 @@ import pa_visualize as pav
 DEPTHS_MM = [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
 
 PULSE_TYPES = [
-    {'tag': 'ns',   'label': 'NS  (3 ns, 10 J/cm²)',      'color': '#E88C4C', 'ls': '--',  'marker': 's'},
-    {'tag': 'fs',   'label': 'FS  (100 fs, 1 J/cm²)',     'color': '#4CE87A', 'ls': '--',  'marker': '^'},
-    {'tag': 'b040', 'label': 'Burst N=40',                 'color': '#4C9BE8', 'ls': '-',   'marker': 'o'},
-    {'tag': 'b080', 'label': 'Burst N=80',                 'color': '#9B4CE8', 'ls': '-',   'marker': 'o'},
-    {'tag': 'b120', 'label': 'Burst N=120',                'color': '#E84C4C', 'ls': '-',   'marker': 'o'},
-    {'tag': 'b160', 'label': 'Burst N=160',                'color': '#E8C84C', 'ls': '-',   'marker': 'o'},
-    {'tag': 'b200', 'label': 'Burst N=200',                'color': '#4CE8E8', 'ls': '-',   'marker': 'o'},
+    {'tag': 'ns',   'label': 'NS  (3 ns, 10 J/cm²)',  'color': '#E88C4C', 'ls': '--', 'marker': 's'},
+    {'tag': 'fs',   'label': 'FS  (100 fs, 1 J/cm²)', 'color': '#4CE87A', 'ls': '--', 'marker': '^'},
+    {'tag': 'b040', 'label': 'Burst N=40',             'color': '#4C9BE8', 'ls': '-',  'marker': 'o'},
+    {'tag': 'b080', 'label': 'Burst N=80',             'color': '#9B4CE8', 'ls': '-',  'marker': 'o'},
+    {'tag': 'b120', 'label': 'Burst N=120',            'color': '#E84C4C', 'ls': '-',  'marker': 'o'},
+    {'tag': 'b160', 'label': 'Burst N=160',            'color': '#E8C84C', 'ls': '-',  'marker': 'o'},
+    {'tag': 'b200', 'label': 'Burst N=200',            'color': '#4CE8E8', 'ls': '-',  'marker': 'o'},
 ]
 
 
-def _peak_pressure(mat_path):
-    d = pav.load_results(mat_path)
-    return float(np.max(np.abs(d['sensor_data'])))
+def _scenario_labels():
+    """Return list of (label, mat_path) for all scenarios in sweep order."""
+    labels = []
+    for pt in PULSE_TYPES:
+        for d_mm in DEPTHS_MM:
+            d_um  = round(d_mm * 1000)
+            label = f"{pt['tag']}_d{d_um:04d}um"
+            path  = os.path.join(RESULTS_DIR, f'{label}.mat')
+            labels.append((label, path))
+    return labels
 
 
 def fig_depth_comparison():
+    """Peak PA pressure vs depth, one curve per pulse type."""
     print('Building peak-pressure vs depth comparison...')
     fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -50,11 +60,12 @@ def fig_depth_comparison():
         depths_found = []
         pressures    = []
         for d_mm in DEPTHS_MM:
-            d_um   = round(d_mm * 1000)
-            label  = f"{pt['tag']}_d{d_um:04d}um"
-            path   = os.path.join(RESULTS_DIR, f'{label}.mat')
+            d_um  = round(d_mm * 1000)
+            label = f"{pt['tag']}_d{d_um:04d}um"
+            path  = os.path.join(RESULTS_DIR, f'{label}.mat')
             if os.path.isfile(path):
-                pp = _peak_pressure(path)
+                d  = pav.load_results(path)
+                pp = float(np.max(np.abs(d['sensor_data'])))
                 depths_found.append(d_mm)
                 pressures.append(pp)
                 print(f"  {label}  peak = {pp:.3e} Pa")
@@ -92,15 +103,47 @@ def main():
     mpl.rcParams.update(pav.RC)
     os.makedirs(OUT_ROOT, exist_ok=True)
 
+    scenarios = _scenario_labels()
+    n_total   = len(scenarios)
+
+    # --- Per-scenario standard figures ---
+    for i, (label, mat_path) in enumerate(scenarios, 1):
+        if not os.path.isfile(mat_path):
+            print(f'[{i:02d}/{n_total}] SKIP {label} -- not found')
+            continue
+
+        out_dir = os.path.join(OUT_ROOT, label)
+        os.makedirs(out_dir, exist_ok=True)
+
+        print(f'[{i:02d}/{n_total}] {label}')
+        d = pav.load_results(mat_path)
+
+        for fig_fn, fig_stem in pav.FIGURES:
+            fig  = fig_fn(d)
+            path = os.path.join(out_dir, f'{label}_{fig_stem}.{args.fmt}')
+            fig.savefig(path, dpi=args.dpi)
+            print(f'  Saved -> {path}')
+
+        if args.show:
+            plt.show()
+        else:
+            plt.close('all')
+
+        print()
+
+    # --- Summary comparison plot ---
+    print('--- Summary ---')
     fig  = fig_depth_comparison()
     path = os.path.join(OUT_ROOT, f'peak_pressure_vs_depth.{args.fmt}')
     fig.savefig(path, dpi=args.dpi)
-    print(f'\nSaved -> {path}')
+    print(f'Saved -> {path}')
 
     if args.show:
         plt.show()
     else:
         plt.close('all')
+
+    print(f'\nDone. Output: {OUT_ROOT}')
 
 
 if __name__ == '__main__':
