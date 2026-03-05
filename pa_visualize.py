@@ -157,7 +157,7 @@ def _load_hdf5(path: str) -> dict:
             'target_depth':  _scalar(cfg['target_depth']),
             'target_radius': _scalar(cfg['target_radius']),
             'c_sound':       _scalar(cfg['c_sound']),
-            'f_transducer':  _scalar(cfg['f_transducer']),
+            'f_grid':  _scalar(cfg['f_grid']),
             'f_max_acoustic': _scalar(r['f_max_acoustic']) if 'f_max_acoustic' in r else np.inf,
             'w0':            _scalar(beam['w0']),
             'label':         _string(cfg['label']),
@@ -191,7 +191,7 @@ def _load_scipy(path: str) -> dict:
         'target_depth':  float(cfg.target_depth),
         'target_radius': float(cfg.target_radius),
         'c_sound':       float(cfg.c_sound),
-        'f_transducer':  float(cfg.f_transducer),
+        'f_grid':  float(cfg.f_grid),
         'f_max_acoustic': float(r.f_max_acoustic) if hasattr(r, 'f_max_acoustic') else np.inf,
         'w0':            float(r.beam.w0),
         'label':         str(cfg.label),
@@ -344,7 +344,7 @@ def fig_waveform(d: dict) -> plt.Figure:
     t_us        = d['t_array'] * 1e6                     # [us]
     sensor_data = d['sensor_data']                        # [n_elements x Nt]
     element_y   = d['element_y']
-    f_t         = d['f_transducer']
+    f_t         = d['f_grid']
     c           = d['c_sound']
     z_tgt       = d['target_depth']
     r_tgt       = d['target_radius']
@@ -414,7 +414,7 @@ def fig_spectrum(d: dict) -> plt.Figure:
     t_array     = d['t_array']
     sensor_data = d['sensor_data']
     element_y   = d['element_y']
-    f_t         = d['f_transducer']
+    f_t         = d['f_grid']
     c           = d['c_sound']
     z_tgt       = d['target_depth']
     r_tgt       = d['target_radius']
@@ -444,7 +444,7 @@ def fig_spectrum(d: dict) -> plt.Figure:
     freqs_Hz = np.fft.rfftfreq(N, d=dt)
     spectrum = np.abs(np.fft.rfft(windowed))
 
-    # Normalize to 0 dB; x-axis limit: 2× f_max_acoustic if set, else 2× f_transducer
+    # Normalize to 0 dB; x-axis limit: 2× f_max_acoustic if set, else 2× f_grid
     f_max_acoustic = d['f_max_acoustic']
     f_max_Hz   = 2.0 * (f_max_acoustic if np.isfinite(f_max_acoustic) else f_t)
     freq_mask  = freqs_Hz <= f_max_Hz

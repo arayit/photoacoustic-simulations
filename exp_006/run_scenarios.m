@@ -1,31 +1,37 @@
 clearvars; close all; clc;
 
 % =========================================================================
-% exp_005 — Depth study: peak PA pressure vs target depth
+% exp_006 — Depth & signal study (publication)
 %
-% Goal: characterise how TPA-based PA signal decays with depth for
-%       different illumination strategies.
+% Goal: characterise PA signal vs target depth for single-pulse and
+%       burst-mode illumination with BODIPY-TR at 10 mM.
 %
-% Pulse types (5 + NS/FS = 7):
-%   ns      : NS single pulse,  tau = 3 ns,   F = 10 J/cm^2
-%   fs      : FS single pulse,  tau = 100 fs, F = 1  J/cm^2
-%   b040    : FS burst N = 40,  tau = 100 fs, F = 1  J/cm^2 per pulse
-%   b080    : FS burst N = 80
-%   b120    : FS burst N = 120
-%   b160    : FS burst N = 160
-%   b200    : FS burst N = 200
+% Pulse types (17):
+%   ns      : NS single pulse,  tau = 3 ns,    F = 10 J/cm^2
+%   fs      : FS single pulse,  tau = 100 fs,  F = 1  J/cm^2
+%   b020    : FS burst N = 20,  tau = 100 fs,  F = 1  J/cm^2 per pulse
+%   b040    : FS burst N = 40
+%   b060    : FS burst N = 60
+%   ...
+%   b300    : FS burst N = 300
 %
-% Depths (11):  0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 mm
+% Depths (18):  0.5, 1.0, 1.5, 2.0, ... , 9.0 mm  (500 um steps)
 %
-% Total: 7 x 11 = 77 scenarios
+% Total: 17 x 18 = 306 scenarios
 %
 % Contrast agent: BODIPY-TR at 10 mM
-%   mu_a_target   = 0
+%   mu_a_target   = 0       (no linear absorption at 1064 nm)
 %   alpha2_target = 9e-13   [m/W]  ~280 GM at 10 mM
 %   alpha3_target = 0
 %
-% Grid: z_max = target_depth + 2 mm  (dynamic — minimises grid size)
+% Key change from exp_005:
+%   NA = 0.50  (was 0.55)
+%   Depth range extended to 9 mm (was 5 mm)
+%   Burst sweep: N = 20:20:300 (15 values, was 5)
+%
+% Grid: z_max = target_depth + 2 mm  (dynamic)
 % Noise: snr_dB = 40 dB
+% k-Wave: PMLInside = false  (sensors at z=0 are outside PML)
 % =========================================================================
 
 % --- Paths ---
@@ -37,7 +43,7 @@ if ~exist(results_dir, 'dir'), mkdir(results_dir); end
 force_rerun = true;
 
 % --- Depth sweep ---
-depth_list = [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0] * 1e-3;  % [m]
+depth_list = (0.5 : 0.5 : 9.0) * 1e-3;   % [m]  18 depths
 
 % --- Pulse types ---
 pulse_types = struct();
@@ -51,7 +57,7 @@ pulse_types(2).pulse_duration = 100e-15;
 pulse_types(2).fluence_focus  = 1;
 pulse_types(2).burst_N        = 1;
 
-for burst_N_val = [40, 80, 120, 160, 200]
+for burst_N_val = 20:20:300
     k = numel(pulse_types) + 1;
     pulse_types(k).tag            = sprintf('b%03d', burst_N_val);
     pulse_types(k).pulse_duration = 100e-15;
@@ -68,17 +74,17 @@ t_start = tic;
 % Base cfg
 % =========================================================================
 base.lambda        = 1064e-9;
-base.NA            = 0.55;
+base.NA            = 0.50;             % *** changed from 0.55 ***
 base.n             = 1.33;
 base.target_radius = 5e-6;
 base.Gamma         = 0.12;
 
-base.mu_a_tissue   = 18;
-base.mu_s_tissue   = 91;
+base.mu_a_tissue   = 18;              % [m^-1]  @ 1064 nm
+base.mu_s_tissue   = 91;              % [m^-1]  @ 1064 nm
 
 base.mu_a_target   = 0;
 base.mu_s_target   = 0;
-base.alpha2_target = 9e-13;         % [m/W] — ~280 GM at 10 mM
+base.alpha2_target = 9e-13;           % [m/W] — ~280 GM at 10 mM
 base.alpha3_target = 0;
 
 base.c_sound       = 1500;
@@ -86,7 +92,7 @@ base.rho           = 1000;
 base.alpha_coeff   = 0.75;
 base.alpha_power   = 1.5;
 
-base.f_grid  = 50e6;
+base.f_grid        = 50e6;            % [Hz] — sets dx = 3 um
 base.PPW_acoustic  = 10;
 base.n_elements    = 128;
 
@@ -101,7 +107,7 @@ base.verbose       = false;
 
 tau_burst = 3e-9;   % burst window [s] — metadata only
 
-fprintf('=== exp_005 depth study | %d scenarios | %s ===\n\n', ...
+fprintf('=== exp_006 depth & signal study | %d scenarios | %s ===\n\n', ...
         n_total, datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 
 % =========================================================================
@@ -114,7 +120,7 @@ for pt = pulse_types
         depth_um  = round(depth * 1e6);
         cfg.label         = sprintf('%s_d%04dum', pt.tag, depth_um);
         cfg.target_depth  = depth;
-        cfg.z_max         = depth + 2e-3;   % dynamic: 2 mm clearance below target
+        cfg.z_max         = depth + 2e-3;      % dynamic: 2 mm clearance below target
         cfg.pulse_duration = pt.pulse_duration;
         cfg.fluence_focus  = pt.fluence_focus;
 
@@ -124,7 +130,7 @@ for pt = pulse_types
         end
 
         save_path = fullfile(results_dir, [cfg.label '.mat']);
-        fprintf('[%02d/%02d] %s ', sidx, n_total, cfg.label);
+        fprintf('[%03d/%03d] %s ', sidx, n_total, cfg.label);
         t0 = tic;
         if ~force_rerun && exist(save_path, 'file')
             fprintf('-- loaded\n');
@@ -133,7 +139,7 @@ for pt = pulse_types
             results = run_pa_sim(cfg);
             save(save_path, 'results', '-v7.3');
             t_runs(end+1) = toc(t0);
-            fprintf('        done in %s\n', format_duration(t_runs(end)));
+            fprintf('          done in %s\n', format_duration(t_runs(end)));
         end
         print_progress(sidx, n_total, t_start, t_runs);
     end
@@ -147,12 +153,12 @@ fprintf('\n=== All done | Total time: %s ===\n', format_duration(toc(t_start)));
 function print_progress(sidx, n_total, t_start, t_runs)
     elapsed = toc(t_start);
     if isempty(t_runs)
-        fprintf('        elapsed: %s\n\n', format_duration(elapsed));
+        fprintf('          elapsed: %s\n\n', format_duration(elapsed));
         return;
     end
     remaining = n_total - sidx;
     eta       = mean(t_runs) * remaining;
-    fprintf('        elapsed: %s | ETA: ~%s (%d remaining)\n\n', ...
+    fprintf('          elapsed: %s | ETA: ~%s (%d remaining)\n\n', ...
             format_duration(elapsed), format_duration(eta), remaining);
 end
 

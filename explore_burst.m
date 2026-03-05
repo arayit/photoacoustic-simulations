@@ -55,8 +55,8 @@ cfg.rho           = 1000;          % [kg/m^3]
 cfg.alpha_coeff   = 0.75;
 cfg.alpha_power   = 1.5;
 
-% Transducer
-cfg.f_transducer  = 50e6;          % [Hz]
+% Grid / detection
+cfg.f_grid  = 50e6;          % [Hz]
 cfg.PPW_acoustic  = 10;
 cfg.n_elements    = 128;
 

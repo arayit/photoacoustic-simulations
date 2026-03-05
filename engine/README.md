@@ -60,7 +60,7 @@ cfg.alpha_coeff = 0.75;         % [dB/MHz^y/cm]
 cfg.alpha_power = 1.5;
 
 % --- Transducer ---
-cfg.f_transducer = 50e6;        % [Hz]
+cfg.f_grid = 50e6;        % [Hz]
 cfg.PPW_acoustic = 10;
 cfg.n_elements   = 128;
 
@@ -232,7 +232,7 @@ When scanning, set `beam_y_center` to the current scan position and `target_y` t
 |-----------|------|-------------|
 | `z_max` | m | Axial domain extent |
 | `y_max` | m | Lateral half-extent |
-| `f_transducer` | Hz | Transducer frequency — sets acoustic grid spacing |
+| `f_grid` | Hz | Maximum acoustic frequency — sets grid spacing via `dx = c / (f_grid · PPW)` |
 | `PPW_acoustic` | — | Points per wavelength, acoustic grid (≥ 6 recommended) |
 | `PPW_optical` | — | Points per beam waist, optical grid (≥ 3 recommended) |
 | `opt_margin` | — | Optical grid half-extent in multiples of `target_radius` |

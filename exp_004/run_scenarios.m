@@ -41,7 +41,7 @@ clearvars; close all; clc;
 %   rho          = 1000 kg/m^3
 %   alpha_coeff  = 0.75 dB/MHz^y/cm
 %   alpha_power  = 1.5
-%   f_transducer = 50 MHz
+%   f_grid = 50 MHz
 %   PPW_acoustic = 10
 %   n_elements   = 128
 %   z_max        = 6 mm
@@ -57,7 +57,7 @@ addpath(fullfile(study_dir, '..', 'engine'));
 results_dir = fullfile(study_dir, 'results');
 if ~exist(results_dir, 'dir'), mkdir(results_dir); end
 
-force_rerun = false;
+force_rerun = true;
 
 % --- Progress tracking ---
 N_list    = 10:10:300;
@@ -90,7 +90,7 @@ base.rho           = 1000;          % [kg/m^3]
 base.alpha_coeff   = 0.75;          % [dB/MHz^y/cm]
 base.alpha_power   = 1.5;
 
-base.f_transducer  = 50e6;          % [Hz]
+base.f_grid  = 50e6;          % [Hz]
 base.PPW_acoustic  = 10;
 base.n_elements    = 128;
 

@@ -34,7 +34,7 @@ rho            = cfg.rho;
 alpha_coeff    = cfg.alpha_coeff;
 alpha_power    = cfg.alpha_power;
 
-f_transducer   = cfg.f_transducer;
+f_grid   = cfg.f_grid;
 PPW_acoustic   = cfg.PPW_acoustic;
 n_elements     = cfg.n_elements;
 
@@ -72,7 +72,7 @@ I_focus_peak      = fluence_focus_si / pulse_duration;
 I_surface_peak    = I_focus_peak * (beam.w0 / beam.w_surface)^2;
 
 % --- Acoustic grid ---
-dx_acoustic    = c_sound / (f_transducer * PPW_acoustic);
+dx_acoustic    = c_sound / (f_grid * PPW_acoustic);
 
 % --- Global grid ---
 Nz     = round(z_max / dx_acoustic);
@@ -161,7 +161,7 @@ medium.alpha_power = alpha_power;
 source.p0 = p0_acoustic;
 
 % --- Sensor: linear array at tissue surface ---
-element_pitch = c_sound / (2 * f_transducer);
+element_pitch = c_sound / (2 * f_grid);   % sensor spacing = lambda/2 at f_grid
 element_y     = linspace(-(n_elements-1)/2, (n_elements-1)/2, n_elements) * element_pitch;
 element_iy    = round((element_y - y_vec(1)) / dx_acoustic) + 1;
 element_iy    = max(1, min(Ny, element_iy));
@@ -184,7 +184,7 @@ end
 % --- Run k-Wave ---
 if verbose, fprintf('Running k-Wave...\n'); end
 sensor_data = kspaceFirstOrder2D(kgrid, medium, source, sensor, ...
-    'PMLSize', pml_size, 'PlotSim', false, 'DataCast', data_cast);
+    'PMLSize', pml_size, 'PMLInside', false, 'PlotSim', false, 'DataCast', data_cast);
 
 if gpuDeviceCount > 0
     sensor_data = gather(sensor_data);

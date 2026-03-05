@@ -81,7 +81,7 @@ base.rho           = 1000;             % [kg/m^3]
 base.alpha_coeff   = 0.75;             % [dB/MHz^y/cm]
 base.alpha_power   = 1.5;
 
-base.f_transducer  = 50e6;             % [Hz]
+base.f_grid  = 50e6;             % [Hz]
 base.PPW_acoustic  = 10;
 base.n_elements    = 128;
 
