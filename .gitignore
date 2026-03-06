@@ -3,9 +3,9 @@ __pycache__/
 .ipynb_checkpoints/
 *.png
 *.mat
-!exp_001/results/*.mat
-!exp_002/results/*.mat
-!SBR_study/*.mat
+!experiments/exp_001/results/*.mat
+!experiments/exp_002/results/*.mat
+!experiments/SBR_study/*.mat
 *.dat
 *.csv
 *.asv

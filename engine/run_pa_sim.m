@@ -118,12 +118,24 @@ Q_opt  = burst_N * (mu_a_opt_map .* I_opt_map ...
         + alpha3_opt_map .* I_opt_map.^3) * pulse_duration;
 p0_opt = Gamma * Q_opt;
 
-% --- Interpolate p0 to acoustic grid ---
-[Z_opt, Y_opt] = ndgrid(z_opt_vec, y_opt_vec);
-[Z_ac,  Y_ac]  = ndgrid(z_vec, y_vec);
-F           = griddedInterpolant(Z_opt, Y_opt, p0_opt, 'linear', 'none');
-p0_acoustic = F(Z_ac, Y_ac);
-p0_acoustic(isnan(p0_acoustic)) = 0;
+% --- Anti-aliased resampling of p0 onto acoustic grid ---
+%   The TPA source (w0/sqrt(2) ~ 0.5 um) is smaller than the acoustic cell
+%   (~3 um).  Point-interpolation aliases the peak depending on whether a
+%   grid node lands on the source centre.  Cell-averaging preserves the
+%   source integral (monopole moment), which governs the far-field signal,
+%   and is independent of grid alignment.
+dz_ac = z_vec(2) - z_vec(1);
+dy_ac = y_vec(2) - y_vec(1);
+
+% Map each optical grid point to the enclosing acoustic cell index
+iz_ac = round((z_opt_vec - z_vec(1)) / dz_ac) + 1;
+iy_ac = round((y_opt_vec - y_vec(1)) / dy_ac) + 1;
+iz_ac = max(1, min(Nz, iz_ac));
+iy_ac = max(1, min(Ny, iy_ac));
+
+% Bin-average: mean of optical p0 values falling in each acoustic cell
+[IZ_ac, IY_ac] = ndgrid(iz_ac, iy_ac);
+p0_acoustic = accumarray([IZ_ac(:), IY_ac(:)], p0_opt(:), [Nz Ny], @mean, 0);
 
 if verbose
     fprintf('Beam:\n');
