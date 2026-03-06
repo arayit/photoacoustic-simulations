@@ -1,6 +1,7 @@
 .claude/
-engine/beam_focusing.m
-engine/pa_comparison_ns_vs_fs_unified.m
+__pycache__/
+.ipynb_checkpoints/
+*.png
 *.mat
 !exp_001/results/*.mat
 !exp_002/results/*.mat
