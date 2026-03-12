@@ -1,4 +1,15 @@
 function [I_map, acc_att_vec] = build_intensity_map(beam, z_vec, y_vec, I_surface_peak, mu_t_map, beam_y_center)
+% BUILD_INTENSITY_MAP  Ballistic-photon Beer-Lambert intensity field.
+%
+%   Computes the 2D intensity map for a focused Gaussian beam propagating
+%   through an attenuating medium.  Only ballistic (unscattered) photons
+%   are retained: mu_t = mu_a + mu_s uses the FULL scattering coefficient,
+%   so every scattered photon is treated as lost from the beam.
+%
+%   Attenuation is accumulated row-by-row (marching in z) using an
+%   intensity-weighted average mu_t per row.  The lateral Gaussian profile
+%   shape is preserved; only its amplitude decays with depth.
+
     z_points = length(z_vec);
     y_points = length(y_vec);
     dz       = z_vec(2) - z_vec(1);

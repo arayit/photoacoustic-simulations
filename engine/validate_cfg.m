@@ -27,6 +27,9 @@ end
 % -------------------------------------------------------------------------
 % Positive-definite scalars (must be > 0)
 % -------------------------------------------------------------------------
+% NOTE: mu_s_tissue and mu_s_target are the FULL scattering coefficients
+%       (NOT reduced mu_s').  The engine uses ballistic-photon attenuation
+%       where every scattered photon is lost from the focused beam.
 positive = {'lambda','NA','n','target_depth','target_radius', ...
             'fluence_focus','pulse_duration','Gamma', ...
             'mu_a_tissue','mu_s_tissue', ...

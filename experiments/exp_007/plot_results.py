@@ -121,7 +121,7 @@ def fig_enhancement_vs_depth(cache):
     ax.plot(depths_plot, enhancement,
             color='#0072BD', marker='o', ls='-', lw=1.0, ms=3.5,
             markeredgecolor='white', markeredgewidth=0.3,
-            label='Best burst / NS')
+            label='Burst $N=100$ / NS')
 
     ax.set_xlabel('Target depth  (mm)')
     ax.set_ylabel('Enhancement  (max burst / NS)')
@@ -190,12 +190,14 @@ def fig_waveform_comparison(d_mm):
 # Figure 4: p0 map comparison (NS vs burst)
 # ---------------------------------------------------------------------------
 
-def fig_p0_comparison(d_mm):
+def fig_p0_comparison(d_mm, tags=None, labels=None):
     from matplotlib.colors import LogNorm
     from matplotlib.patches import Circle
 
-    tags   = ['ns', 'b100']
-    labels = ['NS (1 ns, 1 J cm$^{-2}$)', 'Burst $N=100$ (100 fs, 0.1 J cm$^{-2}$)']
+    if tags is None:
+        tags   = ['ns', 'b100']
+    if labels is None:
+        labels = ['NS (1 ns, 1 J cm$^{-2}$)', 'Burst $N=100$ (100 fs, 0.1 J cm$^{-2}$)']
 
     fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.0), constrained_layout=True)
 
@@ -230,10 +232,15 @@ def fig_p0_comparison(d_mm):
         ax.set_facecolor('black')
 
         circle = Circle((0, 0), r_tgt_um,
-                         ec='white', fc='none', lw=0.7, ls='--', zorder=5)
+                         ec='white', fc='none', lw=0.5, ls='--',
+                         alpha=0.7, zorder=5, label='Target boundary')
         ax.add_patch(circle)
         ax.axhline(0, color='white', lw=0.4, ls=':', alpha=0.5, zorder=4)
         ax.axvline(0, color='white', lw=0.4, ls=':', alpha=0.5, zorder=4)
+        ax.legend(frameon=True, fancybox=False, framealpha=0.7,
+                  edgecolor='0.5', fontsize=4.5, loc='upper right',
+                  handlelength=1.2, handletextpad=0.3,
+                  borderpad=0.2, labelspacing=0.2)
 
         ax.set_aspect('equal')
         ax.set_xlim(y_um[[0, -1]])
@@ -353,9 +360,19 @@ def main():
         print(f'  Saved -> {p}')
 
     for p0_depth in [1.0, 3.0]:
-        print(f'p0 map comparison at {p0_depth} mm...')
+        print(f'p0 map comparison (NS vs burst) at {p0_depth} mm...')
         fig = fig_p0_comparison(p0_depth)
         p = os.path.join(OUT_ROOT, f'p0_comparison_{p0_depth:.1f}mm.{args.fmt}')
+        fig.savefig(p, dpi=args.dpi); plt.close(fig)
+        print(f'  Saved -> {p}')
+
+    for p0_depth in [1.0, 3.0]:
+        print(f'p0 map comparison (NS vs FS) at {p0_depth} mm...')
+        fig = fig_p0_comparison(p0_depth,
+                                tags=['ns', 'fs'],
+                                labels=['NS (1 ns, 1 J cm$^{-2}$)',
+                                        'FS (100 fs, 0.1 J cm$^{-2}$)'])
+        p = os.path.join(OUT_ROOT, f'p0_ns_vs_fs_{p0_depth:.1f}mm.{args.fmt}')
         fig.savefig(p, dpi=args.dpi); plt.close(fig)
         print(f'  Saved -> {p}')
 

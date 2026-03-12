@@ -30,7 +30,7 @@ exp_006 used near-ablation-threshold fluences (1–10 J/cm²), producing initial
 | Target radius | 5 µm |
 | Grüneisen parameter | 0.12 |
 | Tissue µ_a | 18 m⁻¹ |
-| Tissue µ_s | 91 m⁻¹ |
+| Tissue µ_s | 91 m⁻¹ (used as-run; this was actually µ_s′, not the full scattering coeff — corrected to 4340 m⁻¹ in exp_008) |
 | Contrast agent | BODIPY-TR (~1 mM) |
 | α₂ | 9×10⁻¹⁴ m/W |
 | Speed of sound | 1500 m/s |
@@ -80,8 +80,19 @@ Both the NS pulse (1 ns) and burst window (1 ns) are close to τ_st. Marginally 
 | 50 | 5,000× |
 | 100 | 10,000× |
 
+## Figures produced by plot_results.py
+
+| File | Description |
+|------|-------------|
+| `peak_pressure_vs_depth.{fmt}` | Peak PA pressure vs depth for all pulse types |
+| `enhancement_vs_depth.{fmt}` | Burst N=100 / NS enhancement vs depth |
+| `enhancement_vs_N.{fmt}` | Enhancement vs burst N at each depth |
+| `waveform_comparison_{d}mm.{fmt}` | PA waveform comparison at 1.0 and 3.0 mm |
+| `p0_comparison_{d}mm.{fmt}` | p0 map: NS vs Burst N=100 at 1.0 and 3.0 mm |
+| `p0_ns_vs_fs_{d}mm.{fmt}` | p0 map: NS vs FS at 1.0 and 3.0 mm |
+
 ## Running
 
 ```
-matlab -batch "cd('C:\Users\SYAVAS-LASERLAB\Documents\MATLAB\photoacoustic-simulations\exp_007'); run_scenarios"
+matlab -batch "cd('C:\Users\SYAVAS-LASERLAB\Documents\MATLAB\photoacoustic-simulations\experiments\exp_007'); run_scenarios"
 ```

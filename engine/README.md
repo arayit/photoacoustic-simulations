@@ -45,7 +45,7 @@ cfg.Gamma = 0.12;
 
 % --- Tissue optical properties @ wavelength [m⁻¹] ---
 cfg.mu_a_tissue = 18;
-cfg.mu_s_tissue = 91;
+cfg.mu_s_tissue = 91;           % FULL scattering coeff [m^-1], NOT reduced mu_s'
 
 % --- Target optical properties [m⁻¹] ---
 cfg.mu_a_target   = 500;
@@ -143,6 +143,10 @@ Two grids are used throughout:
 | `target_y` | scalar | Target lateral position [m] (only present when non-zero) |
 | `snr_dB` | scalar | SNR used for noise addition [dB, peak-referenced] — `Inf` when no noise was added |
 | `f_max_acoustic` | scalar | Low-pass cut-off frequency [Hz] — `Inf` when no filter was applied |
+| `T_ballistic` | scalar | Ballistic transmission to the focal plane — `exp(−µ_t · d)` |
+| `E_focus` | scalar | Per-pulse energy at the focal plane [J] |
+| `E_surface` | scalar | Per-pulse energy required at the tissue surface [J] = `E_focus / T_ballistic` |
+| `F_surface` | scalar | Per-pulse fluence at the tissue surface [J/cm²] |
 
 ---
 
@@ -208,14 +212,14 @@ When scanning, set `beam_y_center` to the current scan position and `target_y` t
 | Parameter | Unit | Description |
 |-----------|------|-------------|
 | `mu_a_tissue` | m⁻¹ | Tissue absorption |
-| `mu_s_tissue` | m⁻¹ | Tissue scattering |
+| `mu_s_tissue` | m⁻¹ | Tissue scattering — **must be the full scattering coefficient** (not reduced µ_s′) |
 | `mu_a_target` | m⁻¹ | Target absorption |
-| `mu_s_target` | m⁻¹ | Target scattering |
+| `mu_s_target` | m⁻¹ | Target scattering — **must be the full scattering coefficient** (not reduced µ_s′) |
 | `alpha2_target` | m/W | Two-photon absorption coefficient |
 | `alpha3_target` | m²/W² | Three-photon absorption coefficient |
 | `Gamma` | — | Grüneisen parameter (~0.12 for tissue) |
 
-`mu_t = mu_a + mu_s` drives Beer-Lambert depletion. Only `mu_a` (and nonlinear terms) contribute to energy deposition.
+`mu_t = mu_a + mu_s` drives Beer-Lambert depletion using the **ballistic-photon model**: every scattered photon is treated as lost from the focused beam. `mu_s` must be the full scattering coefficient, not the reduced coefficient µ_s′ = µ_s(1−g). Only `mu_a` (and nonlinear terms) contribute to energy deposition.
 
 ### Acoustic Medium
 

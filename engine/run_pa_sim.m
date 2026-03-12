@@ -19,12 +19,15 @@ fluence_focus  = cfg.fluence_focus;
 pulse_duration = cfg.pulse_duration;
 Gamma          = cfg.Gamma;
 
+% Ballistic-photon attenuation model: only unscattered photons reach the
+% focus.  mu_s must be the FULL scattering coefficient (NOT reduced mu_s').
+% Every scattered photon is treated as lost from the focused beam.
 mu_a_tissue    = cfg.mu_a_tissue;
-mu_s_tissue    = cfg.mu_s_tissue;
-mu_t_tissue    = mu_a_tissue + mu_s_tissue;
+mu_s_tissue    = cfg.mu_s_tissue;           % full scattering coeff [m^-1]
+mu_t_tissue    = mu_a_tissue + mu_s_tissue; % total extinction (ballistic)
 
 mu_a_target    = cfg.mu_a_target;
-mu_s_target    = cfg.mu_s_target;
+mu_s_target    = cfg.mu_s_target;           % full scattering coeff [m^-1]
 mu_t_target    = mu_a_target + mu_s_target;
 alpha2_target  = cfg.alpha2_target;
 alpha3_target  = cfg.alpha3_target;
@@ -94,8 +97,30 @@ y_opt_vec    = linspace(beam_y_center - opt_half_ext, beam_y_center + opt_half_e
     mu_a_tissue, mu_t_tissue, mu_a_target, mu_t_target, target_depth, target_radius, ...
     0, 0, 0, 0, target_y);
 
-% --- Intensity on global grid (Beer-Lambert) ---
+% --- Intensity on global grid (Beer-Lambert, ballistic photons only) ---
 [I_map, acc_att_vec] = build_intensity_map(beam, z_vec, y_vec, I_surface_peak, mu_t_map, beam_y_center);
+
+% --- Ballistic transmission & pulse energy budget ---
+%   T_ballistic : fraction of ballistic photons reaching the focus
+%   E_focus     : pulse energy required at the focal plane [J]
+%   E_surface   : pulse energy required at the tissue surface [J]
+%   F_surface   : fluence at the tissue surface [J/cm²]
+iz_focus       = find(z_vec >= target_depth, 1, 'first');
+if isempty(iz_focus), iz_focus = length(z_vec); end
+T_ballistic    = exp(-acc_att_vec(iz_focus));
+A_focus        = pi * beam.w0^2 / 2;               % 1/e² Gaussian area [m²]
+E_focus        = fluence_focus_si * A_focus;         % [J]
+E_surface      = E_focus / T_ballistic;              % [J]
+A_surface      = pi * beam.w_surface^2 / 2;         % [m²]
+F_surface      = E_surface / A_surface * 1e-4;      % [J/cm²]
+
+if verbose
+    fprintf('Ballistic budget (per pulse):\n');
+    fprintf('  T_ballistic = %.4e  (at z = %.1f mm)\n', T_ballistic, target_depth*1e3);
+    fprintf('  E_focus     = %.3e J\n', E_focus);
+    fprintf('  E_surface   = %.3e J\n', E_surface);
+    fprintf('  F_surface   = %.3e J/cm^2\n', F_surface);
+end
 
 % --- Intensity on optical grid ---
 acc_att_opt = interp1(z_vec, acc_att_vec, z_opt_vec, 'linear');
@@ -234,9 +259,13 @@ if verbose
 end
 
 % --- Pack results ---
-results.sensor_data  = sensor_data;
-results.snr_dB        = snr_dB;         % Inf when no noise was added
+results.sensor_data    = sensor_data;
+results.snr_dB         = snr_dB;         % Inf when no noise was added
 results.f_max_acoustic = f_max_acoustic; % Inf when no filter was applied
+results.T_ballistic    = T_ballistic;    % ballistic transmission to focus
+results.E_focus        = E_focus;        % pulse energy at focus [J]
+results.E_surface      = E_surface;      % pulse energy at surface [J]
+results.F_surface      = F_surface;      % fluence at surface [J/cm²]
 if burst_N > 1
     results.burst_N   = burst_N;
     results.burst_tau = burst_tau;

@@ -163,6 +163,10 @@ def _load_hdf5(path: str) -> dict:
             'label':         _string(cfg['label']),
             'lambda_m':      _scalar(cfg['lambda']),
             'NA':            _scalar(cfg['NA']),
+            'T_ballistic':   _scalar(r['T_ballistic']) if 'T_ballistic' in r else None,
+            'E_focus':       _scalar(r['E_focus'])     if 'E_focus'     in r else None,
+            'E_surface':     _scalar(r['E_surface'])   if 'E_surface'   in r else None,
+            'F_surface':     _scalar(r['F_surface'])   if 'F_surface'   in r else None,
         }
 
 
@@ -197,6 +201,10 @@ def _load_scipy(path: str) -> dict:
         'label':         str(cfg.label),
         'lambda_m':      float(lam),
         'NA':            float(cfg.NA),
+        'T_ballistic':   float(r.T_ballistic) if hasattr(r, 'T_ballistic') else None,
+        'E_focus':       float(r.E_focus)     if hasattr(r, 'E_focus')     else None,
+        'E_surface':     float(r.E_surface)   if hasattr(r, 'E_surface')   else None,
+        'F_surface':     float(r.F_surface)   if hasattr(r, 'F_surface')   else None,
     }
 
 
