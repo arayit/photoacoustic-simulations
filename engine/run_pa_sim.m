@@ -68,11 +68,25 @@ target_y      = 0;
 if isfield(cfg, 'beam_y_center'), beam_y_center = cfg.beam_y_center; end
 if isfield(cfg, 'target_y'),      target_y      = cfg.target_y;      end
 
+% --- Free-carrier absorption (FCA) ---
+sigma_fc    = 0;
+eta_fc      = [];
+fca_enabled = false;
+if isfield(cfg, 'sigma_fc'), sigma_fc = cfg.sigma_fc; end
+if isfield(cfg, 'eta_fc'),   eta_fc   = cfg.eta_fc;   end
+fca_enabled = sigma_fc > 0 && burst_N > 1;
+
 % --- Beam ---
 beam              = gaussian_beam_params(lambda, NA, n, target_depth);
 fluence_focus_si  = fluence_focus * 1e4;            % J/cm² → J/m²
 I_focus_peak      = fluence_focus_si / pulse_duration;
 I_surface_peak    = I_focus_peak * (beam.w0 / beam.w_surface)^2;
+
+% --- Auto-derive eta_fc from TPA coefficient if not provided ---
+if fca_enabled && isempty(eta_fc)
+    photon_energy = 6.62607015e-34 * 299792458 / lambda;   % hc/lambda [J]
+    eta_fc = alpha2_target / (2 * photon_energy);
+end
 
 % --- Acoustic grid ---
 dx_acoustic    = c_sound / (f_grid * PPW_acoustic);
@@ -138,9 +152,26 @@ end
     0, alpha2_target, 0, alpha3_target, target_y);
 
 % --- Energy deposition and initial pressure on optical grid ---
-Q_opt  = burst_N * (mu_a_opt_map .* I_opt_map ...
-        + alpha2_opt_map .* I_opt_map.^2 ...
-        + alpha3_opt_map .* I_opt_map.^3) * pulse_duration;
+Q_linear = burst_N * (mu_a_opt_map .* I_opt_map) * pulse_duration;
+Q_tpa    = burst_N * (alpha2_opt_map .* I_opt_map.^2) * pulse_duration;
+Q_3pa    = burst_N * (alpha3_opt_map .* I_opt_map.^3) * pulse_duration;
+
+if fca_enabled
+    % Free-carrier accumulation across burst (tau_carrier = Inf assumed):
+    %   Carrier density per pulse: delta_Nc = eta_fc * I^2 * tau_p
+    %   Carrier density before pulse k: N_{k-1} = (k-1) * delta_Nc
+    %   FCA heating from pulse k: sigma_fc * N_{k-1} * I * tau_p
+    %   Sum over k=1..N: sigma_fc * I * delta_Nc * tau_p * N*(N-1)/2
+    S_fca    = burst_N * (burst_N - 1) / 2;
+    delta_Nc = eta_fc * I_opt_map.^2 * pulse_duration;
+    Q_fca    = sigma_fc * I_opt_map .* delta_Nc * pulse_duration * S_fca;
+else
+    Q_fca = zeros(size(I_opt_map));
+    S_fca = 0;
+end
+
+Q_opt = Q_linear + Q_tpa + Q_3pa + Q_fca;
+
 p0_opt = Gamma * Q_opt;
 
 % --- Anti-aliased resampling of p0 onto acoustic grid ---
@@ -179,6 +210,14 @@ if verbose
         fprintf('  N           = %d pulses\n', burst_N);
         fprintf('  tau_burst   = %.1f ns\n', burst_tau*1e9);
         fprintf('  f_R         = %.2f GHz\n', f_R*1e-9);
+    end
+    if fca_enabled
+        fca_frac = max(Q_fca(:)) / max(Q_opt(:));
+        fprintf('Free-carrier absorption:\n');
+        fprintf('  sigma_fc    = %.2e m^2\n', sigma_fc);
+        fprintf('  eta_fc      = %.2e\n', eta_fc);
+        fprintf('  S_fca       = %.1f\n', S_fca);
+        fprintf('  FCA/total   = %.3f (at peak)\n', fca_frac);
     end
     fprintf('\nGlobal grid:  %d x %d pts  (dx = %.1f um)\n', Nz, Ny, dx_acoustic*1e6);
     fprintf('Optical grid: %d x %d pts  (dz = %.0f nm, dy = %.0f nm)\n', ...
@@ -271,11 +310,20 @@ if burst_N > 1
     results.burst_tau = burst_tau;
     results.burst_fR  = f_R;
 end
+if fca_enabled
+    results.fca.sigma_fc     = sigma_fc;
+    results.fca.eta_fc       = eta_fc;
+    results.fca.S_fca        = S_fca;
+end
 results.t_array      = kgrid.t_array;   % plain double — load without k-Wave
 results.kgrid        = kgrid;
 results.p0_acoustic  = p0_acoustic;
 results.p0_opt       = p0_opt;
 results.Q_opt        = Q_opt;
+results.Q_linear     = Q_linear;
+results.Q_tpa        = Q_tpa;
+results.Q_3pa        = Q_3pa;
+results.Q_fca        = Q_fca;
 results.I_opt_map    = I_opt_map;
 results.I_map        = I_map;
 results.beam         = beam;

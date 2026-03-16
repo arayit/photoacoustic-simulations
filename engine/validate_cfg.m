@@ -100,6 +100,26 @@ if isfield(cfg, 'burst_tau')
     end
 end
 
+% -------------------------------------------------------------------------
+% Optional: FCA parameters (sigma_fc, eta_fc)
+% -------------------------------------------------------------------------
+if isfield(cfg, 'sigma_fc')
+    v = cfg.sigma_fc;
+    if ~isscalar(v) || ~isnumeric(v) || v < 0
+        error('validate_cfg: ''sigma_fc'' must be a non-negative scalar (got %s).', mat2str(v));
+    end
+    if v > 0 && (~isfield(cfg, 'burst_N') || cfg.burst_N <= 1)
+        warning('validate_cfg: sigma_fc > 0 but burst_N <= 1; FCA has no effect for single pulses.');
+    end
+end
+
+if isfield(cfg, 'eta_fc')
+    v = cfg.eta_fc;
+    if ~isscalar(v) || ~isnumeric(v) || v < 0
+        error('validate_cfg: ''eta_fc'' must be a non-negative scalar (got %s).', mat2str(v));
+    end
+end
+
 if isfield(cfg, 'snr_dB')
     v = cfg.snr_dB;
     if ~isscalar(v) || ~isnumeric(v) || v <= 0
