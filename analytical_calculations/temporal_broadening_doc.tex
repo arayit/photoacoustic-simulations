@@ -1,0 +1,63 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{amsmath}
+\usepackage{siunitx}
+\usepackage[margin=2.5cm]{geometry}
+
+\begin{document}
+\noindent\textbf{Temporal broadening of a 100\,fs pulse in scattering tissue}\\[4pt]
+Based on Lutomirski, Ciervo, Hall, \textit{Appl.\ Opt.}\ \textbf{34}(30), 7125--7136 (1995).
+
+\bigskip\noindent
+\textbf{Parameters.}\;
+$\mu_s = 4340\;\mathrm{m^{-1}}$,\;
+$g = 0.93$,\;
+$n = 1.4$,\;
+$c = c_0/n = 2.14\times10^8\;\mathrm{m/s}$,\;
+$\ell_s = 1/\mu_s = 230\;\mu\mathrm{m}$,\;
+input FWHM $= 100\;\mathrm{fs}$,\;
+$\sigma_p = \tau_p / 2\sqrt{2\ln 2} = 42.5\;\mathrm{fs}$.
+
+\medskip\noindent
+\textbf{Derived quantities} (Henyey--Greenstein, Eqs.~21a,b):\;
+$v = 1 - g = 0.07$,\quad
+$w = \tfrac{3}{2}[1 - \langle\cos^2\theta\rangle] = 0.1351$,\quad
+$\langle\cos^2\theta\rangle = (1+2g^2)/3$.
+
+\medskip\noindent
+\textbf{Normalised units.}\;
+$z_\mathrm{n} = z\,\mu_s$\; (depth in mean free paths),\quad
+$T = \mu_s c\, t$\; (time in MFP transit times).
+
+\bigskip\noindent
+\textbf{Key equations.}
+
+\begin{enumerate}
+\item Mean normalised time to reach depth $z$ (Eq.~26, inverted as Eq.~45a):
+\begin{equation}
+  T(z) = \frac{1}{v}\ln\frac{1}{1-vz}.
+\end{equation}
+
+\item Axial variance of the photon arrival-time distribution (Eq.~C7):
+\begin{equation}
+  \sigma_z^2(T) = \frac{2}{3}\,
+  \frac{(w^2-3wv)(e^{-vT}-1+vT) + 2v^2(e^{-wT}-1+wT)}{wv^2(w-v)}
+  - \biggl[\frac{1-e^{-vT}}{v}\biggr]^2.
+\end{equation}
+
+\item Conversion to physical temporal spread:
+\begin{equation}
+  \sigma_t(z) = \frac{\sigma_z(T(z))}{\mu_s\,c}.
+\end{equation}
+
+\item Output pulse width (Gaussian convolution):
+\begin{equation}
+  \boxed{\;\sigma_\mathrm{out}(z) = \sqrt{\sigma_p^2 + \sigma_t^2(z)}\;}
+  \qquad
+  \mathrm{FWHM}_\mathrm{out} = 2\sqrt{2\ln 2}\;\sigma_\mathrm{out}.
+\end{equation}
+\end{enumerate}
+
+\noindent
+The model diverges at $z \to 1/v \approx 14.3$ mean free paths ($\approx 3.3\;\mathrm{mm}$).
+
+\end{document}
