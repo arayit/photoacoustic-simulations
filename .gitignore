@@ -1,11 +1,12 @@
 .claude/
 __pycache__/
+*.pyc
 .ipynb_checkpoints/
 *.png
 *.mat
-!experiments/exp_001/results/*.mat
-!experiments/exp_002/results/*.mat
-!experiments/SBR_study/*.mat
+\!experiments/exp_001/results/*.mat
+\!experiments/exp_002/results/*.mat
+\!experiments/SBR_study/*.mat
 *.dat
 *.csv
 *.asv
