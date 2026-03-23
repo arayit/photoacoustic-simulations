@@ -1,0 +1,25 @@
+{
+    "latex-workshop.latex.recipe.default": "latexmk (latexmk)",
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk",
+            "command": "latexmk",
+            "args": [
+                "-pdf",
+                "-interaction=nonstopmode",
+                "-f",
+                "-synctex=1",
+                "%DOC%"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "latexmk (latexmk)",
+            "tools": ["latexmk"]
+        }
+    ],
+    "latex-workshop.view.pdf.viewer": "tab",
+    "editor.wordWrap": "on",
+    "editor.wordWrapColumn": 100
+}
